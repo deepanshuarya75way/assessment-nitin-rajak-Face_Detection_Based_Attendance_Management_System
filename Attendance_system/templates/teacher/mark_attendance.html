@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient text-white border-0">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h2 class="display-6 fw-bold mb-2">
+                            <i class="bi bi-camera-video me-3"></i>Mark Attendance
+                        </h2>
+                        <p class="lead mb-0">
+                            <i class="bi bi-info-circle me-2"></i>Select a subject to start marking attendance using face recognition
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <img src="https://img.freepik.com/free-vector/attendance-concept-illustration_114360-2586.jpg" 
+                             alt="Attendance Illustration" 
+                             class="img-fluid" 
+                             style="max-height: 120px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Subject Selection -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-book me-2"></i>Select Subject</h5>
+                <span class="badge bg-primary">{{ subjects|length }} Subjects</span>
+            </div>
+            <div class="card-body">
+                {% if subjects %}
+                    <div class="row g-4">
+                        {% for subject in subjects %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card subject-card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="subject-icon bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                                                <i class="bi bi-journal-bookmark-fill text-primary fs-4"></i>
+                                            </div>
+                                            <div>
+                                                <h5 class="fw-bold mb-1">{{ subject.name }}</h5>
+                                                <p class="text-muted small mb-0">
+                                                    <i class="bi bi-building me-1"></i>{{ subject.class_name }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="subject-stats mb-3">
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-people me-1"></i>Students
+                                                </small>
+                                                <span class="fw-bold">{{ subject.enrollments|length }}</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-calendar me-1"></i>Total Classes
+                                                </small>
+                                                <span class="fw-bold">{{ subject.attendances|length }}</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-clock me-1"></i>Last Attendance
+                                                </small>
+                                                <span class="fw-bold">
+                                                    {% if subject.attendances %}
+                                                        {{ subject.attendances[-1].date.strftime('%d/%m/%Y') }}
+                                                    {% else %}
+                                                        Not marked
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-grid">
+                                            <a href="{{ url_for('mark_attendance_subject', subject_id=subject.id) }}" 
+                                               class="btn btn-primary">
+                                                <i class="bi bi-camera me-2"></i>Mark Attendance
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <img src="https://img.freepik.com/free-vector/no-data-concept-illustration_114360-2506.jpg" 
+                             alt="No Subjects" 
+                             class="img-fluid mb-3" 
+                             style="max-height: 150px;">
+                        <h6 class="text-muted">No subjects found</h6>
+                        <p class="small text-muted mb-3">You haven't created any subjects yet</p>
+                        <a href="{{ url_for('manage_subjects') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Add Subject
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Guide -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-question-circle me-2"></i>How to Mark Attendance</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-3">
+                        <div class="text-center guide-step">
+                            <div class="step-number bg-primary text-white rounded-circle mx-auto mb-3">1</div>
+                            <h6 class="fw-bold mb-2">Select Subject</h6>
+                            <p class="small text-muted">Choose the subject and class you want to mark attendance for</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center guide-step">
+                            <div class="step-number bg-success text-white rounded-circle mx-auto mb-3">2</div>
+                            <h6 class="fw-bold mb-2">Position Camera</h6>
+                            <p class="small text-muted">Place camera to clearly capture all students' faces</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center guide-step">
+                            <div class="step-number bg-info text-white rounded-circle mx-auto mb-3">3</div>
+                            <h6 class="fw-bold mb-2">Capture & Recognize</h6>
+                            <p class="small text-muted">Click capture to detect and recognize faces automatically</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center guide-step">
+                            <div class="step-number bg-warning text-white rounded-circle mx-auto mb-3">4</div>
+                            <h6 class="fw-bold mb-2">Save Attendance</h6>
+                            <p class="small text-muted">Review recognized students and save attendance</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tips -->
+                <div class="alert alert-info mt-4 mb-0">
+                    <div class="d-flex">
+                        <i class="bi bi-lightbulb fs-3 me-3"></i>
+                        <div>
+                            <h6 class="fw-bold mb-2">Pro Tips for Best Results:</h6>
+                            <ul class="small mb-0">
+                                <li>Ensure good lighting on students' faces</li>
+                                <li>Position camera at eye level for better recognition</li>
+                                <li>Ask students to remove masks, caps, or sunglasses</li>
+                                <li>Capture multiple angles if classroom is large</li>
+                                <li>Make sure students have registered their faces first</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recent Attendance Activity</h5>
+                <a href="{{ url_for('view_attendance') }}" class="btn btn-sm btn-outline-primary">
+                    View All <i class="bi bi-arrow-right ms-2"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                {% set recent_activity = [] %}
+                {% for subject in subjects %}
+                    {% for attendance in subject.attendances[-3:] %}
+                        {% set recent_activity = recent_activity.append(attendance) %}
+                    {% endfor %}
+                {% endfor %}
+                
+                {% if recent_activity %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Subject</th>
+                                    <th>Period</th>
+                                    <th>Present</th>
+                                    <th>Absent</th>
+                                    <th>Total</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for subject in subjects %}
+                                    {% if subject.attendances %}
+                                        {% set attendance = subject.attendances[-1] %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-light text-dark">
+                                                    <i class="bi bi-calendar me-1"></i>{{ attendance.date.strftime('%d/%m/%Y') }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                                        <i class="bi bi-book text-primary"></i>
+                                                    </div>
+                                                    <strong>{{ subject.name }}</strong>
+                                                </div>
+                                            </td>
+                                            <td><span class="badge bg-secondary">Period {{ attendance.period }}</span></td>
+                                            <td class="text-success fw-bold">
+                                                {{ subject.attendances|selectattr('status', 'equalto', 'present')|list|length }}
+                                            </td>
+                                            <td class="text-danger fw-bold">
+                                                {{ subject.attendances|selectattr('status', 'equalto', 'absent')|list|length }}
+                                            </td>
+                                            <td class="fw-bold">{{ subject.enrollments|length }}</td>
+                                            <td>
+                                                <a href="{{ url_for('mark_attendance_subject', subject_id=subject.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-camera"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-clock-history fs-1 text-muted mb-3"></i>
+                        <p class="text-muted mb-0">No recent attendance activity</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .subject-card {
+        transition: all 0.3s ease;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    
+    .subject-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(102, 126, 234, 0.2) !important;
+    }
+    
+    .subject-icon {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .subject-stats {
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 10px;
+    }
+    
+    .guide-step {
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 15px;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .guide-step:hover {
+        transform: translateY(-5px);
+        background: white;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .step-number {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .table thead th {
+        background: linear-gradient(135deg, #667eea10, #764ba210);
+        color: #333;
+        font-weight: 600;
+    }
+    
+    .table tbody tr {
+        transition: all 0.3s ease;
+    }
+    
+    .table tbody tr:hover {
+        background: linear-gradient(135deg, #667eea05, #764ba205);
+    }
+    
+    .alert-info {
+        background: linear-gradient(135deg, #a8edea, #fed6e3);
+        border: none;
+        color: #1a4b6d;
+        border-radius: 15px;
+    }
+    
+    @media (max-width: 768px) {
+        .display-6 {
+            font-size: 1.5rem;
+        }
+        
+        .guide-step {
+            padding: 15px;
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+        }
+    }
+</style>
+
+<!-- JavaScript for Interactive Features -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filter subjects
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.className = 'form-control mb-3';
+        searchInput.placeholder = 'Search subjects...';
+        searchInput.style.maxWidth = '300px';
+        
+        const header = document.querySelector('.card-header');
+        header.appendChild(searchInput);
+        
+        searchInput.addEventListener('keyup', function() {
+            const searchTerm = this.value.toLowerCase();
+            const cards = document.querySelectorAll('.subject-card');
+            
+            cards.forEach(function(card) {
+                const subjectName = card.querySelector('h5').textContent.toLowerCase();
+                const className = card.querySelector('.text-muted small').textContent.toLowerCase();
+                
+                if (subjectName.includes(searchTerm) || className.includes(searchTerm)) {
+                    card.closest('.col-md-6').style.display = '';
+                } else {
+                    card.closest('.col-md-6').style.display = 'none';
+                }
+            });
+        });
+        
+        // Quick stats animation
+        const stats = document.querySelectorAll('.subject-stats .fw-bold');
+        stats.forEach(function(stat) {
+            const value = stat.textContent;
+            if (value === '0' || value === 'Not marked') {
+                stat.style.color = '#dc3545';
+            }
+        });
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl + F for focus search
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            const searchInput = document.querySelector('input[placeholder="Search subjects..."]');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }
+    });
+    
+    // Tooltip initialization
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+</script>
+{% endblock %}

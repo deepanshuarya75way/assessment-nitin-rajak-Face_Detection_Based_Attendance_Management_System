@@ -1,0 +1,775 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient text-white border-0">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h2 class="display-6 fw-bold mb-2">
+                            <i class="bi bi-camera-video me-3"></i>Mark Attendance: {{ subject.name }}
+                        </h2>
+                        <p class="lead mb-0">
+                            <i class="bi bi-building me-2"></i>{{ subject.class_name }} | 
+                            <i class="bi bi-people me-2"></i>{{ students|length }} Students Enrolled
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <a href="{{ url_for('mark_attendance_page') }}" class="btn btn-light">
+                            <i class="bi bi-arrow-left me-2"></i>Back to Subjects
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Camera & Recognition Section -->
+<div class="row g-4">
+    <!-- Camera Feed Column -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-camera-video me-2"></i>Live Camera Feed</h5>
+                <div>
+                    <span class="badge bg-success" id="cameraStatus">
+                        <i class="bi bi-check-circle me-1"></i>Camera Active
+                    </span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="camera-container position-relative">
+                    <video id="video" width="100%" height="auto" autoplay playsinline></video>
+                    <canvas id="canvas" style="display: none;"></canvas>
+                    
+                    <!-- Camera Overlay with Face Detection Indicator -->
+                    <div class="camera-overlay" id="cameraOverlay">
+                        <div class="face-detection-indicator" id="faceIndicator">
+                            <i class="bi bi-person-bounding-box"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Camera Controls Overlay -->
+                    <div class="camera-controls">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <button id="captureBtn" class="btn btn-primary btn-lg w-100" onclick="captureAndRecognize()">
+                                    <i class="bi bi-camera me-2"></i>Capture & Recognize
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button id="markBtn" class="btn btn-success btn-lg w-100" onclick="markAttendance()" disabled>
+                                    <i class="bi bi-check-circle me-2"></i>Save Attendance
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Camera Settings -->
+                <div class="p-3 border-top">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <label class="form-label small text-muted mb-1">
+                                <i class="bi bi-calendar me-1"></i>Select Date
+                            </label>
+                            <input type="date" id="attendanceDate" class="form-control" value="{{ now().strftime('%Y-%m-%d') }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small text-muted mb-1">
+                                <i class="bi bi-clock me-1"></i>Select Period
+                            </label>
+                            <select id="period" class="form-select">
+                                <option value="1">Period 1 (9:00 - 10:00)</option>
+                                <option value="2">Period 2 (10:00 - 11:00)</option>
+                                <option value="3">Period 3 (11:00 - 12:00)</option>
+                                <option value="4">Period 4 (12:00 - 1:00)</option>
+                                <option value="5">Period 5 (2:00 - 3:00)</option>
+                                <option value="6">Period 6 (3:00 - 4:00)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small text-muted mb-1">
+                                <i class="bi bi-camera-video me-1"></i>Camera Settings
+                            </label>
+                            <select id="cameraSelect" class="form-select" onchange="switchCamera(this.value)">
+                                <option value="default">Default Camera</option>
+                                <option value="front">Front Camera</option>
+                                <option value="back">Back Camera</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recognition Status -->
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="fw-bold mb-1"><i class="bi bi-activity me-2"></i>Recognition Status</h6>
+                        <p class="small text-muted mb-0" id="status">Waiting for capture...</p>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-info" id="recognizedCount">0</span>
+                        <small class="text-muted d-block">Students Recognized</small>
+                    </div>
+                </div>
+                <div class="progress mt-2" style="height: 5px;">
+                    <div id="recognitionProgress" class="progress-bar bg-success" role="progressbar" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recognized Students Column -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-people me-2"></i>Recognized Students</h5>
+                <span class="badge bg-primary" id="recognizedListCount">0</span>
+            </div>
+            <div class="card-body">
+                <!-- Recognized Students List -->
+                <div id="recognizedList" class="recognized-list mb-3">
+                    <div class="text-center text-muted py-5" id="emptyRecognized">
+                        <i class="bi bi-person-badge fs-1 mb-3"></i>
+                        <p>No students recognized yet</p>
+                        <small>Click 'Capture & Recognize' to start</small>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-danger" onclick="clearAllRecognized()">
+                        <i class="bi bi-x-circle me-2"></i>Clear All
+                    </button>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pb-3">
+                <div class="alert alert-info small mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Make sure all students have registered their faces before marking attendance.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enrolled Students List -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-person-lines-fill me-2"></i>Enrolled Students ({{ students|length }})</h5>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" onclick="showAllStudents()">
+                        <i class="bi bi-eye me-1"></i>Show All
+                    </button>
+                    <button class="btn btn-sm btn-outline-success" onclick="showPresentOnly()">
+                        <i class="bi bi-check-circle me-1"></i>Present Only
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="showAbsentOnly()">
+                        <i class="bi bi-x-circle me-1"></i>Absent Only
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3" id="studentsList">
+                    {% for student in students %}
+                        <div class="col-md-4 col-lg-3 student-item" data-student-id="{{ student.id }}" data-status="absent">
+                            <div class="card student-card h-100 border-0 shadow-sm">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="student-avatar bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                                            <i class="bi bi-person-circle text-primary fs-4"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="fw-bold mb-1">{{ student.name }}</h6>
+                                            <small class="text-muted d-block">
+                                                <i class="bi bi-qr-code me-1"></i>{{ student.roll_number }}
+                                            </small>
+                                        </div>
+                                        <div class="status-indicator" id="status-{{ student.id }}">
+                                            <span class="badge bg-secondary">Absent</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .camera-container {
+        position: relative;
+        background: #000;
+        min-height: 400px;
+        max-height: 500px;
+        overflow: hidden;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .camera-container video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .camera-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        border: 3px solid #667eea;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { border-color: #667eea; }
+        50% { border-color: #764ba2; }
+        100% { border-color: #667eea; }
+    }
+    
+    .face-detection-indicator {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        background: rgba(40, 167, 69, 0.8);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        animation: blink 1s infinite;
+        display: none;
+    }
+    
+    @keyframes blink {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+    
+    .camera-controls {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        pointer-events: all;
+    }
+    
+    .recognized-list {
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+    
+    .recognized-list::-webkit-scrollbar {
+        width: 5px;
+    }
+    
+    .recognized-list::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .recognized-list::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 10px;
+    }
+    
+    .recognized-item {
+        background: linear-gradient(135deg, #667eea10, #764ba210);
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+        animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    .recognized-item:hover {
+        transform: translateX(-5px);
+        background: linear-gradient(135deg, #667eea20, #764ba220);
+    }
+    
+    .student-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .student-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2) !important;
+    }
+    
+    .student-card.present {
+        background: linear-gradient(135deg, #28a74510, #20c99710);
+        border-left: 4px solid #28a745;
+    }
+    
+    .student-card.absent {
+        background: linear-gradient(135deg, #dc354510, #f8d7da10);
+        border-left: 4px solid #dc3545;
+    }
+    
+    .student-avatar {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .status-indicator .badge {
+        transition: all 0.3s ease;
+    }
+    
+    .student-card.present .status-indicator .badge {
+        background-color: #28a745 !important;
+    }
+    
+    .btn-group {
+        gap: 5px;
+    }
+    
+    .btn-group .btn {
+        border-radius: 8px !important;
+    }
+    
+    @media (max-width: 768px) {
+        .display-6 {
+            font-size: 1.5rem;
+        }
+        
+        .camera-container {
+            min-height: 300px;
+        }
+        
+        .camera-controls .btn {
+            font-size: 0.9rem;
+            padding: 10px;
+        }
+        
+        .student-avatar {
+            width: 40px;
+            height: 40px;
+            padding: 8px !important;
+        }
+        
+        .student-avatar i {
+            font-size: 1.2rem !important;
+        }
+    }
+</style>
+
+<!-- JavaScript for Camera and Recognition -->
+<script>
+    // Global variables
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const markBtn = document.getElementById('markBtn');
+    const recognizedList = document.getElementById('recognizedList');
+    const emptyRecognized = document.getElementById('emptyRecognized');
+    const recognizedCount = document.getElementById('recognizedCount');
+    const recognizedListCount = document.getElementById('recognizedListCount');
+    const statusSpan = document.getElementById('status');
+    const faceIndicator = document.getElementById('faceIndicator');
+    const recognitionProgress = document.getElementById('recognitionProgress');
+    
+    const subjectId = {{ subject.id }};
+    let recognizedStudents = new Set();
+    let recognizedStudentsData = [];
+    let currentStream = null;
+    let isDetecting = false;
+    
+    // Start camera
+    async function startCamera(cameraType = 'default') {
+        try {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+            
+            let constraints = {
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: 'user'
+                }
+            };
+            
+            if (cameraType === 'front') {
+                constraints.video.facingMode = 'user';
+            } else if (cameraType === 'back') {
+                constraints.video.facingMode = 'environment';
+            }
+            
+            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = currentStream;
+            
+            document.getElementById('cameraStatus').innerHTML = '<i class="bi bi-check-circle me-1"></i>Camera Active';
+            document.getElementById('cameraStatus').className = 'badge bg-success';
+            
+            // Start face detection simulation
+            startFaceDetection();
+            
+        } catch(err) {
+            console.error('Camera error:', err);
+            document.getElementById('cameraStatus').innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Camera Error';
+            document.getElementById('cameraStatus').className = 'badge bg-danger';
+            alert('Error accessing camera: ' + err.message);
+        }
+    }
+    
+    // Switch camera
+    function switchCamera(type) {
+        startCamera(type);
+    }
+    
+    // Simulate face detection (in real app, this would use OpenCV)
+    function startFaceDetection() {
+        isDetecting = true;
+        let detectionCount = 0;
+        
+        const detectionInterval = setInterval(() => {
+            if (!isDetecting) {
+                clearInterval(detectionInterval);
+                return;
+            }
+            
+            // Simulate face detection (random)
+            detectionCount = Math.floor(Math.random() * 5) + 1;
+            
+            if (detectionCount > 0) {
+                faceIndicator.style.display = 'flex';
+                faceIndicator.innerHTML = `<i class="bi bi-person-bounding-box"></i><span class="ms-1">${detectionCount}</span>`;
+            } else {
+                faceIndicator.style.display = 'none';
+            }
+        }, 1000);
+    }
+    
+    // Capture and recognize faces
+    function captureAndRecognize() {
+        if (!video.srcObject) {
+            alert('Please enable camera first');
+            return;
+        }
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const imageData = canvas.toDataURL('image/jpeg', 0.9);
+        
+        statusSpan.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Processing...';
+        captureBtn.disabled = true;
+        
+        // Show progress animation
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += 10;
+            recognitionProgress.style.width = progress + '%';
+            if (progress >= 90) clearInterval(progressInterval);
+        }, 100);
+        
+        // Send to server for face recognition
+        fetch('/api/recognize-face', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                image: imageData,
+                subject_id: subjectId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            clearInterval(progressInterval);
+            recognitionProgress.style.width = '100%';
+            
+            setTimeout(() => {
+                recognitionProgress.style.width = '0%';
+            }, 500);
+            
+            if (data.success && data.students && data.students.length > 0) {
+                data.students.forEach(student => {
+                    if (!recognizedStudents.has(student.id)) {
+                        recognizedStudents.add(student.id);
+                        recognizedStudentsData.push(student);
+                        addToRecognizedList(student);
+                        updateStudentStatus(student.id, 'present');
+                    }
+                });
+                
+                statusSpan.innerHTML = `<i class="bi bi-check-circle text-success me-1"></i>Recognized ${recognizedStudents.size} students`;
+                
+                if (recognizedStudents.size > 0) {
+                    markBtn.disabled = false;
+                }
+            } else {
+                statusSpan.innerHTML = '<i class="bi bi-exclamation-triangle text-warning me-1"></i>No faces recognized';
+            }
+            
+            updateCounts();
+            captureBtn.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            statusSpan.innerHTML = '<i class="bi bi-x-circle text-danger me-1"></i>Error processing image';
+            captureBtn.disabled = false;
+            clearInterval(progressInterval);
+            recognitionProgress.style.width = '0%';
+        });
+    }
+    
+    // Add student to recognized list
+    function addToRecognizedList(student) {
+        if (emptyRecognized) {
+            emptyRecognized.style.display = 'none';
+        }
+        
+        const item = document.createElement('div');
+        item.className = 'recognized-item';
+        item.id = `recognized-${student.id}`;
+        item.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <div class="bg-success bg-opacity-10 rounded-circle p-2 me-2">
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                    </div>
+                    <div>
+                        <strong>${student.name}</strong>
+                        <small class="text-muted d-block">${student.roll_number}</small>
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" onclick="removeFromRecognized(${student.id})">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+        `;
+        recognizedList.appendChild(item);
+        updateCounts();
+    }
+    
+    // Remove student from recognized list
+    function removeFromRecognized(studentId) {
+        recognizedStudents.delete(studentId);
+        recognizedStudentsData = recognizedStudentsData.filter(s => s.id !== studentId);
+        const item = document.getElementById(`recognized-${studentId}`);
+        if (item) {
+            item.remove();
+        }
+        updateStudentStatus(studentId, 'absent');
+        updateCounts();
+        
+        if (recognizedStudents.size === 0) {
+            emptyRecognized.style.display = 'block';
+            markBtn.disabled = true;
+        }
+    }
+    
+    // Clear all recognized students
+    function clearAllRecognized() {
+        recognizedStudents.clear();
+        recognizedStudentsData = [];
+        recognizedList.innerHTML = '';
+        emptyRecognized.style.display = 'block';
+        
+        // Reset all student statuses
+        document.querySelectorAll('.student-item').forEach(item => {
+            const studentId = item.dataset.studentId;
+            updateStudentStatus(studentId, 'absent');
+        });
+        
+        updateCounts();
+        markBtn.disabled = true;
+        statusSpan.innerHTML = 'Cleared all recognized students';
+    }
+    
+    // Update student status in the list
+    function updateStudentStatus(studentId, status) {
+        const studentCard = document.querySelector(`.student-item[data-student-id="${studentId}"] .student-card`);
+        const statusBadge = document.getElementById(`status-${studentId}`);
+        
+        if (studentCard) {
+            studentCard.classList.remove('present', 'absent');
+            studentCard.classList.add(status);
+        }
+        
+        if (statusBadge) {
+            if (status === 'present') {
+                statusBadge.innerHTML = '<span class="badge bg-success">Present</span>';
+            } else {
+                statusBadge.innerHTML = '<span class="badge bg-secondary">Absent</span>';
+            }
+        }
+    }
+    
+    // Update count displays
+    function updateCounts() {
+        recognizedCount.textContent = recognizedStudents.size;
+        recognizedListCount.textContent = recognizedStudents.size;
+    }
+    
+    // Mark attendance
+    function markAttendance() {
+        const date = document.getElementById('attendanceDate').value;
+        const period = document.getElementById('period').value;
+        
+        if (recognizedStudents.size === 0) {
+            alert('No students recognized to mark attendance!');
+            return;
+        }
+        
+        markBtn.disabled = true;
+        markBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving...';
+        
+        fetch('/teacher/process-attendance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                subject_id: subjectId,
+                date: date,
+                period: parseInt(period),
+                present_students: Array.from(recognizedStudents)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                statusSpan.innerHTML = '<i class="bi bi-check-circle text-success me-1"></i>Attendance marked successfully!';
+                
+                // Show success animation
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+                alertDiv.style.zIndex = '9999';
+                alertDiv.innerHTML = `
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    Attendance marked successfully for ${recognizedStudents.size} students!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(alertDiv);
+                
+                setTimeout(() => alertDiv.remove(), 3000);
+                
+                // Reset for next period
+                setTimeout(() => {
+                    clearAllRecognized();
+                    markBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Save Attendance';
+                    markBtn.disabled = true;
+                }, 2000);
+            } else {
+                alert('Error marking attendance');
+                markBtn.disabled = false;
+                markBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Save Attendance';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error marking attendance');
+            markBtn.disabled = false;
+            markBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Save Attendance';
+        });
+    }
+    
+    // Filter functions
+    function showAllStudents() {
+        document.querySelectorAll('.student-item').forEach(item => {
+            item.style.display = '';
+        });
+    }
+    
+    function showPresentOnly() {
+        document.querySelectorAll('.student-item').forEach(item => {
+            const studentId = item.dataset.studentId;
+            if (recognizedStudents.has(parseInt(studentId))) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    function showAbsentOnly() {
+        document.querySelectorAll('.student-item').forEach(item => {
+            const studentId = item.dataset.studentId;
+            if (!recognizedStudents.has(parseInt(studentId))) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    // Initialize camera on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        startCamera('default');
+    });
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+        isDetecting = false;
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Spacebar for capture
+        if (e.code === 'Space' && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+            e.preventDefault();
+            if (!captureBtn.disabled) {
+                captureAndRecognize();
+            }
+        }
+        // Ctrl + S for save
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            if (!markBtn.disabled) {
+                markAttendance();
+            }
+        }
+        // Ctrl + C for clear
+        if (e.ctrlKey && e.key === 'c') {
+            e.preventDefault();
+            clearAllRecognized();
+        }
+    });
+</script>
+{% endblock %}

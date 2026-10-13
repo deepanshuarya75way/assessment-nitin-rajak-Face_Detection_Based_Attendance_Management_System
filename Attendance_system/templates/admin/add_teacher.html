@@ -1,0 +1,676 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient text-white border-0">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h2 class="display-6 fw-bold mb-2">
+                            <i class="bi bi-person-plus me-3"></i>Add New Teacher
+                        </h2>
+                        <p class="lead mb-0">
+                            <i class="bi bi-person-badge me-2"></i>Create a new teacher account with login credentials
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <a href="{{ url_for('manage_teachers') }}" class="btn btn-light">
+                            <i class="bi bi-arrow-left me-2"></i>Back to Teachers
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Teacher Form -->
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-lg">
+            <div class="card-header bg-transparent pt-4 pb-0 border-0">
+                <ul class="nav nav-pills nav-justified mb-3" id="pills-tab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="pills-basic-tab" data-bs-toggle="pill" data-bs-target="#pills-basic" type="button" role="tab">
+                            <i class="bi bi-info-circle me-2"></i>Basic Information
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pills-professional-tab" data-bs-toggle="pill" data-bs-target="#pills-professional" type="button" role="tab">
+                            <i class="bi bi-briefcase me-2"></i>Professional Details
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pills-account-tab" data-bs-toggle="pill" data-bs-target="#pills-account" type="button" role="tab">
+                            <i class="bi bi-shield-lock me-2"></i>Account Setup
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="card-body px-4 py-4">
+                <form method="POST" action="{{ url_for('add_teacher') }}" class="needs-validation" novalidate>
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="pills-tabContent">
+                        <!-- Basic Information Tab -->
+                        <div class="tab-pane fade show active" id="pills-basic" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="name" 
+                                               name="name" 
+                                               placeholder="Enter full name"
+                                               required>
+                                        <label for="name">
+                                            <i class="bi bi-person me-2"></i>Full Name <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="invalid-feedback">
+                                            Please enter teacher's full name.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="teacher_id" 
+                                               name="teacher_id" 
+                                               placeholder="Enter teacher ID"
+                                               required>
+                                        <label for="teacher_id">
+                                            <i class="bi bi-card-heading me-2"></i>Teacher ID <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="invalid-feedback">
+                                            Please enter a unique teacher ID.
+                                        </div>
+                                        <small class="text-muted">e.g., T001, FAC2024, etc.</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="email" 
+                                               class="form-control" 
+                                               id="email" 
+                                               name="email" 
+                                               placeholder="name@example.com"
+                                               required>
+                                        <label for="email">
+                                            <i class="bi bi-envelope me-2"></i>Email Address <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="invalid-feedback">
+                                            Please enter a valid email address.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="tel" 
+                                               class="form-control" 
+                                               id="phone" 
+                                               name="phone" 
+                                               placeholder="Enter phone number"
+                                               pattern="[0-9]{10}">
+                                        <label for="phone">
+                                            <i class="bi bi-telephone me-2"></i>Phone Number
+                                        </label>
+                                        <div class="invalid-feedback">
+                                            Please enter a valid 10-digit phone number.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <div class="form-floating mb-3">
+                                        <textarea class="form-control" 
+                                                  id="address" 
+                                                  name="address" 
+                                                  placeholder="Enter address"
+                                                  style="height: 100px"></textarea>
+                                        <label for="address">
+                                            <i class="bi bi-geo-alt me-2"></i>Address
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-end">
+                                        <button class="btn btn-primary" type="button" onclick="nextTab('pills-professional-tab')">
+                                            Next: Professional Details <i class="bi bi-arrow-right ms-2"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Professional Details Tab -->
+                        <div class="tab-pane fade" id="pills-professional" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <select class="form-select" id="department" name="department" required>
+                                            <option value="">Select department</option>
+                                            <option value="Computer Science">Computer Science</option>
+                                            <option value="Information Technology">Information Technology</option>
+                                            <option value="Electronics">Electronics</option>
+                                            <option value="Electrical">Electrical</option>
+                                            <option value="Mechanical">Mechanical</option>
+                                            <option value="Civil">Civil</option>
+                                            <option value="Mathematics">Mathematics</option>
+                                            <option value="Physics">Physics</option>
+                                            <option value="Chemistry">Chemistry</option>
+                                            <option value="Biology">Biology</option>
+                                            <option value="Commerce">Commerce</option>
+                                            <option value="Arts">Arts</option>
+                                        </select>
+                                        <label for="department">
+                                            <i class="bi bi-building me-2"></i>Department <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="invalid-feedback">
+                                            Please select a department.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="designation" 
+                                               name="designation" 
+                                               placeholder="Enter designation">
+                                        <label for="designation">
+                                            <i class="bi bi-person-badge me-2"></i>Designation
+                                        </label>
+                                        <small class="text-muted">e.g., Professor, Associate Professor, etc.</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="qualification" 
+                                               name="qualification" 
+                                               placeholder="Enter qualification">
+                                        <label for="qualification">
+                                            <i class="bi bi-mortarboard me-2"></i>Qualification
+                                        </label>
+                                        <small class="text-muted">e.g., PhD, M.Tech, M.Sc</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="specialization" 
+                                               name="specialization" 
+                                               placeholder="Enter specialization">
+                                        <label for="specialization">
+                                            <i class="bi bi-star me-2"></i>Specialization
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="number" 
+                                               class="form-control" 
+                                               id="experience" 
+                                               name="experience" 
+                                               placeholder="Years of experience"
+                                               min="0"
+                                               max="50">
+                                        <label for="experience">
+                                            <i class="bi bi-clock-history me-2"></i>Years of Experience
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="date" 
+                                               class="form-control" 
+                                               id="joining_date" 
+                                               name="joining_date" 
+                                               value="{{ now().strftime('%Y-%m-%d') }}">
+                                        <label for="joining_date">
+                                            <i class="bi bi-calendar-plus me-2"></i>Joining Date
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between">
+                                        <button class="btn btn-secondary" type="button" onclick="prevTab('pills-basic-tab')">
+                                            <i class="bi bi-arrow-left me-2"></i>Previous
+                                        </button>
+                                        <button class="btn btn-primary" type="button" onclick="nextTab('pills-account-tab')">
+                                            Next: Account Setup <i class="bi bi-arrow-right ms-2"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Account Setup Tab -->
+                        <div class="tab-pane fade" id="pills-account" role="tabpanel">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="username" 
+                                               name="username" 
+                                               placeholder="Generated automatically"
+                                               readonly>
+                                        <label for="username">
+                                            <i class="bi bi-at me-2"></i>Username (Auto-generated)
+                                        </label>
+                                        <small class="text-muted">Username will be: teacher_[Teacher ID]</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="password" 
+                                               name="password" 
+                                               value="teacher123"
+                                               required>
+                                        <label for="password">
+                                            <i class="bi bi-lock me-2"></i>Password <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="password-strength mt-2">
+                                            <div class="progress" style="height: 5px;">
+                                                <div class="progress-bar" role="progressbar" style="width: 0%;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="send_email" name="send_email" checked>
+                                        <label class="form-check-label" for="send_email">
+                                            <i class="bi bi-envelope me-2"></i>Send credentials via email
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="require_password_change" name="require_password_change">
+                                        <label class="form-check-label" for="require_password_change">
+                                            <i class="bi bi-shield-lock me-2"></i>Require password change on first login
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- Generated Credentials Preview -->
+                                <div class="col-12">
+                                    <div class="card bg-light border-0 mt-3">
+                                        <div class="card-body">
+                                            <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2"></i>Account Summary</h6>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <table class="table table-sm">
+                                                        <tr>
+                                                            <th>Full Name:</th>
+                                                            <td id="previewName">-</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Teacher ID:</th>
+                                                            <td id="previewTeacherId">-</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Email:</th>
+                                                            <td id="previewEmail">-</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Department:</th>
+                                                            <td id="previewDept">-</td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <table class="table table-sm">
+                                                        <tr>
+                                                            <th>Username:</th>
+                                                            <td><code id="previewUsername">-</code></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Password:</th>
+                                                            <td><code id="previewPassword">teacher123</code></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Login URL:</th>
+                                                            <td><code>{{ request.host_url }}login</code></td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        The teacher will receive login credentials via email. Make sure to provide a valid email address.
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between">
+                                        <button class="btn btn-secondary" type="button" onclick="prevTab('pills-professional-tab')">
+                                            <i class="bi bi-arrow-left me-2"></i>Previous
+                                        </button>
+                                        <button type="submit" class="btn btn-success" id="submitBtn">
+                                            <i class="bi bi-person-plus me-2"></i>Add Teacher
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Help Card -->
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="help-icon bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                        <i class="bi bi-question-circle text-primary fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-1">Need Help?</h6>
+                        <p class="small text-muted mb-0">
+                            Teacher accounts can be created with custom or auto-generated passwords. 
+                            Make sure to note down the credentials before adding.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .nav-pills .nav-link {
+        color: #666;
+        border-radius: 10px;
+        padding: 12px;
+        transition: all 0.3s ease;
+    }
+    
+    .nav-pills .nav-link:hover {
+        background: linear-gradient(135deg, #667eea10, #764ba210);
+        transform: translateY(-2px);
+    }
+    
+    .nav-pills .nav-link.active {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .nav-pills .nav-link i {
+        font-size: 1.1rem;
+    }
+    
+    .form-floating > .form-control:focus ~ label,
+    .form-floating > .form-control:not(:placeholder-shown) ~ label {
+        color: #667eea;
+        opacity: 1;
+    }
+    
+    .form-floating > .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        transform: translateY(-2px);
+        transition: all 0.3s ease;
+    }
+    
+    .form-check-input:checked {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+    
+    .form-check-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .password-strength .progress-bar {
+        transition: width 0.3s ease;
+    }
+    
+    .card {
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    
+    .help-icon {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .table-sm th {
+        color: #666;
+        font-weight: 500;
+        width: 40%;
+    }
+    
+    .table-sm td {
+        color: #333;
+        font-weight: 500;
+    }
+    
+    .btn {
+        transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    @media (max-width: 768px) {
+        .display-6 {
+            font-size: 1.5rem;
+        }
+        
+        .nav-pills .nav-link {
+            padding: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .nav-pills .nav-link i {
+            display: none;
+        }
+    }
+</style>
+
+<!-- JavaScript -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tab navigation
+        window.nextTab = function(tabId) {
+            const tab = new bootstrap.Tab(document.getElementById(tabId));
+            tab.show();
+        };
+        
+        window.prevTab = function(tabId) {
+            const tab = new bootstrap.Tab(document.getElementById(tabId));
+            tab.show();
+        };
+        
+        // Auto-generate username from teacher ID
+        document.getElementById('teacher_id').addEventListener('input', function(e) {
+            const teacherId = e.target.value;
+            const usernameField = document.getElementById('username');
+            usernameField.value = teacherId ? `teacher_${teacherId}` : '';
+            updatePreview();
+        });
+        
+        // Update preview on input
+        document.getElementById('name').addEventListener('input', updatePreview);
+        document.getElementById('teacher_id').addEventListener('input', updatePreview);
+        document.getElementById('email').addEventListener('input', updatePreview);
+        document.getElementById('department').addEventListener('input', updatePreview);
+        document.getElementById('password').addEventListener('input', function(e) {
+            document.getElementById('previewPassword').textContent = e.target.value || 'teacher123';
+            checkPasswordStrength(e.target.value);
+        });
+        
+        function updatePreview() {
+            document.getElementById('previewName').textContent = document.getElementById('name').value || '-';
+            document.getElementById('previewTeacherId').textContent = document.getElementById('teacher_id').value || '-';
+            document.getElementById('previewEmail').textContent = document.getElementById('email').value || '-';
+            
+            const deptSelect = document.getElementById('department');
+            document.getElementById('previewDept').textContent = deptSelect.options[deptSelect.selectedIndex]?.text || '-';
+            
+            const teacherId = document.getElementById('teacher_id').value;
+            document.getElementById('previewUsername').textContent = teacherId ? `teacher_${teacherId}` : '-';
+        }
+        
+        // Password strength checker
+        function checkPasswordStrength(password) {
+            const strengthBar = document.querySelector('.password-strength .progress-bar');
+            let strength = 0;
+            
+            if (password.length >= 6) strength += 25;
+            if (password.match(/[a-z]+/)) strength += 25;
+            if (password.match(/[A-Z]+/)) strength += 25;
+            if (password.match(/[0-9]+/)) strength += 25;
+            
+            strengthBar.style.width = strength + '%';
+            
+            if (strength <= 25) {
+                strengthBar.className = 'progress-bar bg-danger';
+            } else if (strength <= 50) {
+                strengthBar.className = 'progress-bar bg-warning';
+            } else if (strength <= 75) {
+                strengthBar.className = 'progress-bar bg-info';
+            } else {
+                strengthBar.className = 'progress-bar bg-success';
+            }
+        }
+        
+        // Form validation
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    // Show which tab has errors
+                    const invalidInputs = form.querySelectorAll(':invalid');
+                    if (invalidInputs.length > 0) {
+                        const firstInvalid = invalidInputs[0];
+                        const tabPane = firstInvalid.closest('.tab-pane');
+                        if (tabPane) {
+                            const tabId = tabPane.id;
+                            const tabButton = document.querySelector(`[data-bs-target="#${tabId}"]`);
+                            if (tabButton) {
+                                new bootstrap.Tab(tabButton).show();
+                            }
+                        }
+                    }
+                }
+                
+                form.classList.add('was-validated');
+            });
+        });
+        
+        // Phone number validation
+        document.getElementById('phone').addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            if (this.value.length > 10) {
+                this.value = this.value.slice(0, 10);
+            }
+        });
+        
+        // Experience validation
+        document.getElementById('experience').addEventListener('input', function(e) {
+            if (this.value < 0) this.value = 0;
+            if (this.value > 50) this.value = 50;
+        });
+        
+        // Confirm before submit
+        document.getElementById('submitBtn').addEventListener('click', function(e) {
+            if (!confirm('Are you sure you want to add this teacher? The account will be created immediately.')) {
+                e.preventDefault();
+            }
+        });
+        
+        // Generate strong password
+        function generateStrongPassword() {
+            const length = 12;
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+            let password = "";
+            for (let i = 0; i < length; i++) {
+                password += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            return password;
+        }
+        
+        // Optional: Add generate password button
+        const passwordField = document.getElementById('password').parentElement;
+        const generateBtn = document.createElement('button');
+        generateBtn.type = 'button';
+        generateBtn.className = 'btn btn-sm btn-outline-secondary mt-2';
+        generateBtn.innerHTML = '<i class="bi bi-shuffle me-1"></i>Generate Strong Password';
+        generateBtn.onclick = function() {
+            const newPassword = generateStrongPassword();
+            document.getElementById('password').value = newPassword;
+            document.getElementById('previewPassword').textContent = newPassword;
+            checkPasswordStrength(newPassword);
+        };
+        passwordField.appendChild(generateBtn);
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl + Enter to submit
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('submitBtn').click();
+        }
+        // Alt + 1,2,3 for tabs
+        if (e.altKey && e.key === '1') {
+            e.preventDefault();
+            document.getElementById('pills-basic-tab').click();
+        }
+        if (e.altKey && e.key === '2') {
+            e.preventDefault();
+            document.getElementById('pills-professional-tab').click();
+        }
+        if (e.altKey && e.key === '3') {
+            e.preventDefault();
+            document.getElementById('pills-account-tab').click();
+        }
+    });
+</script>
+{% endblock %}

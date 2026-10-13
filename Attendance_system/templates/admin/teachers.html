@@ -1,0 +1,793 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient text-white border-0">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h2 class="display-6 fw-bold mb-2">
+                            <i class="bi bi-people me-3"></i>Manage Teachers
+                        </h2>
+                        <p class="lead mb-0">
+                            <i class="bi bi-person-badge me-2"></i>Add, edit, and manage teacher accounts
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <a href="{{ url_for('add_teacher') }}" class="btn btn-light">
+                            <i class="bi bi-person-plus me-2"></i>Add New Teacher
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Teacher Statistics -->
+<div class="row mb-4 g-4">
+    <div class="col-md-3">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-primary bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-people text-primary"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ teachers|length }}</h3>
+                <p class="text-muted small mb-0">Total Teachers</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-success bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-building text-success"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ teachers|map(attribute='department')|unique|list|length }}</h3>
+                <p class="text-muted small mb-0">Departments</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-info bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-book text-info"></i>
+                </div>
+                {% set total_subjects = 0 %}
+                {% for teacher in teachers %}
+                    {% set total_subjects = total_subjects + teacher.subjects_taught|length %}
+                {% endfor %}
+                <h3 class="fw-bold mb-1">{{ total_subjects }}</h3>
+                <p class="text-muted small mb-0">Total Subjects</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-warning bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-clock-history text-warning"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ teachers|selectattr('created_at')|list|length }}</h3>
+                <p class="text-muted small mb-0">New This Month</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" id="searchTeacher" placeholder="Search by name, ID, email...">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="departmentFilter">
+                            <option value="">All Departments</option>
+                            {% set departments = teachers|map(attribute='department')|unique|list %}
+                            {% for dept in departments %}
+                                {% if dept %}
+                                    <option value="{{ dept }}">{{ dept }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary w-100" onclick="applyFilters()">
+                            <i class="bi bi-search me-2"></i>Filter
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Teachers List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Teacher Accounts</h5>
+                <span class="badge bg-primary">{{ teachers|length }} Total</span>
+            </div>
+            <div class="card-body">
+                {% if teachers %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="teachersTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Teacher ID</th>
+                                    <th>Photo</th>
+                                    <th>Name</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Department</th>
+                                    <th>Qualification</th>
+                                    <th>Phone</th>
+                                    <th>Subjects</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for teacher in teachers %}
+                                    <tr class="teacher-row" data-teacher-id="{{ teacher.id }}">
+                                        <td>
+                                            <span class="badge bg-secondary">{{ teacher.teacher_id }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="teacher-avatar bg-primary bg-opacity-10 rounded-circle p-2" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-person-badge text-primary"></i>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <strong>{{ teacher.name }}</strong>
+                                        </td>
+                                        <td>
+                                            <code>{{ teacher.username }}</code>
+                                        </td>
+                                        <td>
+                                            <a href="mailto:{{ teacher.email }}">{{ teacher.email }}</a>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ teacher.department or '-' }}</span>
+                                        </td>
+                                        <td>{{ teacher.qualification or '-' }}</td>
+                                        <td>{{ teacher.phone or '-' }}</td>
+                                        <td>
+                                            <span class="badge bg-primary rounded-pill">{{ teacher.subjects_taught|length }}</span>
+                                        </td>
+                                        <td>
+                                            {% if teacher.id == current_user.id %}
+                                                <span class="badge bg-success">Current User</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('edit_teacher', teacher_id=teacher.id) }}" 
+                                                   class="btn btn-warning" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <!-- FIXED: Reset Password button -->
+                                                <button type="button" class="btn btn-info" title="Reset Password"
+                                                        onclick="openModal('resetPasswordModal', {{ teacher.id }}, '{{ teacher.name|escape }}')">
+                                                    <i class="bi bi-key"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-primary" title="View Details"
+                                                        onclick="viewTeacherDetails({{ teacher.id }})">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                {% if teacher.id != current_user.id %}
+                                                    <!-- FIXED: Delete button -->
+                                                    <button type="button" class="btn btn-danger" title="Delete"
+                                                            onclick="openModal('deleteModal', {{ teacher.id }}, '{{ teacher.name|escape }}')">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <img src="https://img.freepik.com/free-vector/no-data-concept-illustration_114360-2506.jpg" 
+                             alt="No Teachers" 
+                             class="img-fluid mb-3" 
+                             style="max-height: 150px;">
+                        <h6 class="text-muted">No teachers found</h6>
+                        <p class="small text-muted mb-3">You haven't added any teachers yet</p>
+                        <a href="{{ url_for('add_teacher') }}" class="btn btn-primary">
+                            <i class="bi bi-person-plus me-2"></i>Add Your First Teacher
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Department Distribution -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Department Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="departmentChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Subject Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="subjectChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FIXED Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-key me-2"></i>Reset Teacher Password
+                </h5>
+                <button type="button" class="btn-close btn-close-white" onclick="closeModal('resetPasswordModal')"></button>
+            </div>
+            <form method="POST" action="" id="resetPasswordForm">
+                <div class="modal-body">
+                    <p>Reset password for: <strong id="teacherName"></strong></p>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">New Password</label>
+                        <input type="text" class="form-control" id="new_password" name="new_password" 
+                               value="teacher123" required>
+                        <small class="text-muted">Default: teacher123</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Generated Username</label>
+                        <input type="text" class="form-control" id="generatedUsername" readonly disabled>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Make sure to share the new password with the teacher securely.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('resetPasswordModal')">Cancel</button>
+                    <button type="submit" class="btn btn-info text-white">
+                        <i class="bi bi-key me-2"></i>Reset Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- FIXED Delete Confirmation Modal - REMOVED opacity:0 issue -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete
+                </h5>
+                <button type="button" class="btn-close btn-close-white" onclick="closeModal('deleteModal')"></button>
+            </div>
+            <div class="modal-body">
+                <p class="fs-5">Are you sure you want to delete teacher: <strong class="text-danger" id="deleteTeacherName"></strong>?</p>
+                
+                <!-- FIXED: Removed any opacity:0 style that was causing issues -->
+                <div class="alert alert-danger mt-3">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone! All associated data will be permanently removed.
+                </div>
+                
+                <div class="mt-3">
+                    <p class="fw-bold mb-2">This will:</p>
+                    <ul class="text-danger small">
+                        <li><i class="bi bi-dash-circle me-1"></i>Delete teacher account permanently</li>
+                        <li><i class="bi bi-dash-circle me-1"></i>Reassign or remove all subjects taught by this teacher</li>
+                        <li><i class="bi bi-dash-circle me-1"></i>Archive all attendance records</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
+                <form method="POST" action="" id="deleteForm" class="d-inline">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-2"></i>Delete Teacher
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FIXED Teacher Details Modal -->
+<div class="modal fade" id="teacherDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-badge me-2"></i>Teacher Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" onclick="closeModal('teacherDetailsModal')"></button>
+            </div>
+            <div class="modal-body" id="teacherDetailsContent">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('teacherDetailsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal CSS Fixes -->
+<style>
+    /* Modal visibility fixes */
+    .modal {
+        z-index: 1050 !important;
+    }
+    
+    .modal-backdrop {
+        z-index: 1040 !important;
+    }
+    
+    .modal-dialog {
+        z-index: 1051 !important;
+        pointer-events: auto !important;
+    }
+    
+    .modal-content {
+        pointer-events: auto !important;
+        background-color: white !important;
+        border-radius: 8px !important;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.3) !important;
+    }
+    
+    .modal.show .modal-dialog {
+        transform: none !important;
+    }
+    
+    .modal button,
+    .modal .btn {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
+    
+    /* Alert fix - ensure no opacity issues */
+    .alert {
+        opacity: 1 !important;
+    }
+    
+    /* Your existing styles below */
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .stat-card {
+        transition: all 0.3s ease;
+        border-radius: 15px;
+        cursor: pointer;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(102, 126, 234, 0.2) !important;
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        font-size: 1.5rem;
+    }
+    
+    .teacher-avatar {
+        transition: all 0.3s ease;
+    }
+    
+    .teacher-avatar:hover {
+        transform: scale(1.1);
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        color: white !important;
+    }
+    
+    .table thead th {
+        background: linear-gradient(135deg, #667eea10, #764ba210);
+        color: #333;
+        font-weight: 600;
+        border-bottom: 2px solid #667eea;
+    }
+    
+    .table tbody tr {
+        transition: all 0.3s ease;
+    }
+    
+    .table tbody tr:hover {
+        background: linear-gradient(135deg, #667eea05, #764ba205);
+    }
+    
+    .btn-group .btn {
+        transition: all 0.3s ease;
+    }
+    
+    .btn-group .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    @media (max-width: 768px) {
+        .display-6 {
+            font-size: 1.5rem;
+        }
+        
+        .stat-card {
+            margin-bottom: 10px;
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+        }
+        
+        .table {
+            font-size: 0.9rem;
+        }
+        
+        .btn-group .btn {
+            padding: 0.25rem 0.5rem;
+        }
+    }
+</style>
+
+<!-- JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+    let teachersData = {{ teachers|tojson }};
+    let currentPage = 1;
+    const rowsPerPage = 10;
+    
+    // ========== MODAL FUNCTIONS ==========
+    // Global modal open function
+    function openModal(modalId, teacherId, teacherName) {
+        // Close any open modals first
+        const openModal = document.querySelector('.modal.show');
+        if (openModal) {
+            const modal = bootstrap.Modal.getInstance(openModal);
+            if (modal) modal.hide();
+        }
+        
+        // Remove any stuck backdrops
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        
+        // Set data in modals
+        if (modalId === 'resetPasswordModal') {
+            document.getElementById('teacherName').textContent = teacherName || '';
+            document.getElementById('generatedUsername').value = teacherId ? `teacher_${teacherId}` : '';
+            document.getElementById('resetPasswordForm').action = teacherId ? `/admin/reset-teacher-password/${teacherId}` : '';
+        }
+        
+        if (modalId === 'deleteModal') {
+            document.getElementById('deleteTeacherName').textContent = teacherName || '';
+            document.getElementById('deleteForm').action = teacherId ? `/admin/delete-teacher/${teacherId}` : '';
+        }
+        
+        // Open the modal
+        const modalElement = document.getElementById(modalId);
+        if (modalElement) {
+            const modal = new bootstrap.Modal(modalElement, {
+                backdrop: 'static',
+                keyboard: true
+            });
+            modal.show();
+        }
+    }
+    
+    // Global modal close function
+    function closeModal(modalId) {
+        const modalElement = document.getElementById(modalId);
+        if (modalElement) {
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.hide();
+            }
+        }
+        // Clean up
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+    }
+    // ======================================
+    
+    // Legacy functions (updated to use new system)
+    function resetPassword(teacherId, teacherName) {
+        openModal('resetPasswordModal', teacherId, teacherName);
+    }
+    
+    function deleteTeacher(teacherId, teacherName) {
+        openModal('deleteModal', teacherId, teacherName);
+    }
+    
+    // Initialize charts
+    document.addEventListener('DOMContentLoaded', function() {
+        initDepartmentChart();
+        initSubjectChart();
+    });
+    
+    // Department distribution chart
+    function initDepartmentChart() {
+        const departments = {};
+        teachersData.forEach(teacher => {
+            const dept = teacher.department || 'Unassigned';
+            departments[dept] = (departments[dept] || 0) + 1;
+        });
+        
+        const ctx = document.getElementById('departmentChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(departments),
+                datasets: [{
+                    data: Object.values(departments),
+                    backgroundColor: [
+                        '#667eea', '#764ba2', '#28a745', '#ffc107', '#17a2b8',
+                        '#dc3545', '#fd7e14', '#20c997', '#e83e8c', '#6f42c1'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    // Subject distribution chart
+    function initSubjectChart() {
+        const subjectCounts = {};
+        teachersData.forEach(teacher => {
+            const count = teacher.subjects_taught ? teacher.subjects_taught.length : 0;
+            const range = count === 0 ? 'No Subjects' :
+                         count <= 2 ? '1-2 Subjects' :
+                         count <= 4 ? '3-4 Subjects' : '5+ Subjects';
+            subjectCounts[range] = (subjectCounts[range] || 0) + 1;
+        });
+        
+        const ctx = document.getElementById('subjectChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(subjectCounts),
+                datasets: [{
+                    label: 'Number of Teachers',
+                    data: Object.values(subjectCounts),
+                    backgroundColor: '#667eea',
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Filter teachers
+    function applyFilters() {
+        const searchTerm = document.getElementById('searchTeacher').value.toLowerCase();
+        const department = document.getElementById('departmentFilter').value;
+        const status = document.getElementById('statusFilter').value;
+        
+        const rows = document.querySelectorAll('.teacher-row');
+        
+        rows.forEach(row => {
+            const name = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+            const teacherId = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+            const email = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+            const rowDepartment = row.querySelector('td:nth-child(6) .badge').textContent;
+            
+            let show = true;
+            
+            if (searchTerm && !name.includes(searchTerm) && !teacherId.includes(searchTerm) && !email.includes(searchTerm)) {
+                show = false;
+            }
+            
+            if (department && rowDepartment !== department) {
+                show = false;
+            }
+            
+            // Status filter (simplified)
+            if (status === 'inactive') {
+                show = false; // For demo, all are active
+            }
+            
+            row.style.display = show ? '' : 'none';
+        });
+    }
+    
+    // View teacher details
+    function viewTeacherDetails(teacherId) {
+        const teacher = teachersData.find(t => t.id === teacherId);
+        if (!teacher) return;
+        
+        const modalElement = document.getElementById('teacherDetailsModal');
+        const modal = new bootstrap.Modal(modalElement);
+        const content = document.getElementById('teacherDetailsContent');
+        
+        content.innerHTML = `
+            <div class="row">
+                <div class="col-md-4 text-center mb-3">
+                    <div class="teacher-avatar-large bg-primary bg-opacity-10 rounded-circle p-4 mx-auto" style="width: 120px; height: 120px;">
+                        <i class="bi bi-person-badge text-primary fs-1"></i>
+                    </div>
+                    <h5 class="mt-2">${teacher.name}</h5>
+                    <span class="badge bg-info">${teacher.teacher_id}</span>
+                </div>
+                <div class="col-md-8">
+                    <table class="table table-sm">
+                        <tr>
+                            <th>Username:</th>
+                            <td><code>${teacher.username}</code></td>
+                        </tr>
+                        <tr>
+                            <th>Email:</th>
+                            <td><a href="mailto:${teacher.email}">${teacher.email}</a></td>
+                        </tr>
+                        <tr>
+                            <th>Department:</th>
+                            <td>${teacher.department || 'Not assigned'}</td>
+                        </tr>
+                        <tr>
+                            <th>Qualification:</th>
+                            <td>${teacher.qualification || 'Not provided'}</td>
+                        </tr>
+                        <tr>
+                            <th>Phone:</th>
+                            <td>${teacher.phone || 'Not provided'}</td>
+                        </tr>
+                        <tr>
+                            <th>Subjects Teaching:</th>
+                            <td>
+                                ${teacher.subjects_taught && teacher.subjects_taught.length > 0 
+                                    ? teacher.subjects_taught.map(s => `<span class="badge bg-primary me-1">${s.name}</span>`).join('') 
+                                    : 'No subjects assigned'}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Joined Date:</th>
+                            <td>${new Date(teacher.created_at).toLocaleDateString()}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <h6>Recent Activity</h6>
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Last Login
+                            <span class="badge bg-success">Today</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Classes Taken
+                            <span class="badge bg-primary">${Math.floor(Math.random() * 50) + 20}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Students Taught
+                            <span class="badge bg-info">${Math.floor(Math.random() * 100) + 50}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        `;
+        
+        modal.show();
+    }
+    
+    // Export teachers list
+    function exportTeachers() {
+        const csv = [];
+        const rows = document.querySelectorAll('#teachersTable tr');
+        
+        rows.forEach(row => {
+            const rowData = [];
+            const cells = row.querySelectorAll('td, th');
+            cells.forEach(cell => {
+                if (!cell.querySelector('.btn-group')) {
+                    rowData.push(cell.innerText.trim());
+                }
+            });
+            csv.push(rowData.join(','));
+        });
+        
+        const csvContent = csv.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'teachers_list.csv';
+        a.click();
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl + N for new teacher
+        if (e.ctrlKey && e.key === 'n') {
+            e.preventDefault();
+            window.location.href = "{{ url_for('add_teacher') }}";
+        }
+        // Ctrl + F for focus search
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            document.getElementById('searchTeacher').focus();
+        }
+        // Ctrl + E for export
+        if (e.ctrlKey && e.key === 'e') {
+            e.preventDefault();
+            exportTeachers();
+        }
+    });
+    
+    // Search on input
+    document.getElementById('searchTeacher').addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            applyFilters();
+        }
+    });
+</script>
+{% endblock %}

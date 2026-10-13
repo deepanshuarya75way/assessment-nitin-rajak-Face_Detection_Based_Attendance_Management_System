@@ -1,0 +1,689 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient text-white border-0">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h2 class="display-6 fw-bold mb-2">
+                            <i class="bi bi-bar-chart-line me-3"></i>Attendance Reports
+                        </h2>
+                        <p class="lead mb-0">
+                            <i class="bi bi-graph-up me-2"></i>View and analyze attendance records
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <button class="btn btn-light me-2" onclick="exportToExcel()">
+                            <i class="bi bi-file-excel me-2"></i>Export
+                        </button>
+                        <button class="btn btn-light" onclick="window.print()">
+                            <i class="bi bi-printer me-2"></i>Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Filter Attendance</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">Subject</label>
+                        <select class="form-select" id="subjectFilter">
+                            <option value="">All Subjects</option>
+                            {% for subject in subjects %}
+                                <option value="{{ subject.id }}">{{ subject.name }} ({{ subject.class_name }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">From Date</label>
+                        <input type="date" class="form-control" id="dateFrom" value="{{ now().strftime('%Y-%m-01') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">To Date</label>
+                        <input type="date" class="form-control" id="dateTo" value="{{ now().strftime('%Y-%m-%d') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted">&nbsp;</label>
+                        <div class="d-grid">
+                            <button class="btn btn-primary" onclick="applyFilters()">
+                                <i class="bi bi-search me-2"></i>Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4 g-4">
+    <div class="col-md-3 col-6">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-primary bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-calendar-check text-primary"></i>
+                </div>
+                <h3 class="fw-bold mb-1" id="totalClasses">0</h3>
+                <p class="text-muted small mb-0">Total Classes</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-6">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-success bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-check-circle text-success"></i>
+                </div>
+                <h3 class="fw-bold mb-1" id="totalPresent">0</h3>
+                <p class="text-muted small mb-0">Total Present</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-6">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-danger bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-x-circle text-danger"></i>
+                </div>
+                <h3 class="fw-bold mb-1" id="totalAbsent">0</h3>
+                <p class="text-muted small mb-0">Total Absent</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-6">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-info bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-percent text-info"></i>
+                </div>
+                <h3 class="fw-bold mb-1" id="avgPercentage">0%</h3>
+                <p class="text-muted small mb-0">Average Attendance</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4 g-4">
+    <!-- Subject-wise Chart -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Subject-wise Attendance</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="subjectChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Daily Trend Chart -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Daily Attendance Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-table me-2"></i>Attendance Records</h5>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshData()">
+                        <i class="bi bi-arrow-repeat me-1"></i>Refresh
+                    </button>
+                    <button class="btn btn-sm btn-outline-success" onclick="exportToCSV()">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i>CSV
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="attendanceTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Period</th>
+                                <th>Student</th>
+                                <th>Roll No</th>
+                                <th>Subject</th>
+                                <th>Status</th>
+                                <th>Marked By</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Loading attendance data...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pb-3">
+                <nav aria-label="Table navigation">
+                    <ul class="pagination justify-content-center mb-0" id="tablePagination">
+                        <!-- Pagination will be added here -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .stat-card {
+        transition: all 0.3s ease;
+        border-radius: 15px;
+        cursor: pointer;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(102, 126, 234, 0.2) !important;
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        font-size: 1.5rem;
+    }
+    
+    .table thead th {
+        background: linear-gradient(135deg, #667eea10, #764ba210);
+        color: #333;
+        font-weight: 600;
+        border-bottom: 2px solid #667eea;
+    }
+    
+    .table tbody tr {
+        transition: all 0.3s ease;
+    }
+    
+    .table tbody tr:hover {
+        background: linear-gradient(135deg, #667eea05, #764ba205);
+        transform: scale(1.01);
+    }
+    
+    .badge-present {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 8px;
+    }
+    
+    .badge-absent {
+        background: linear-gradient(135deg, #dc3545, #f8d7da);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 8px;
+    }
+    
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 20px;
+    }
+    
+    .pagination .page-link {
+        border: none;
+        margin: 0 3px;
+        border-radius: 8px;
+        color: #667eea;
+        transition: all 0.3s ease;
+    }
+    
+    .pagination .page-link:hover {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .pagination .active .page-link {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+    
+    @media (max-width: 768px) {
+        .display-6 {
+            font-size: 1.5rem;
+        }
+        
+        .stat-card {
+            margin-bottom: 10px;
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+        }
+        
+        .table {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+
+<!-- JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+    // Global variables
+    let attendanceData = [];
+    let currentPage = 1;
+    const rowsPerPage = 10;
+    let subjectChart = null;
+    let trendChart = null;
+    
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        applyFilters();
+    });
+    
+    // Apply filters and load data
+    function applyFilters() {
+        const subjectId = document.getElementById('subjectFilter').value;
+        const dateFrom = document.getElementById('dateFrom').value;
+        const dateTo = document.getElementById('dateTo').value;
+        
+        showLoading();
+        
+        let url = `/teacher/attendance-data?date_from=${dateFrom}&date_to=${dateTo}`;
+        if (subjectId) {
+            url += `&subject_id=${subjectId}`;
+        }
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                attendanceData = data;
+                updateStats();
+                updateCharts();
+                displayTable(1);
+                hideLoading();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Failed to load attendance data');
+            });
+    }
+    
+    // Update statistics cards
+    function updateStats() {
+        const totalClasses = new Set(attendanceData.map(a => `${a.date}-${a.period}-${a.subject}`)).size;
+        const totalPresent = attendanceData.filter(a => a.status === 'present').length;
+        const totalAbsent = attendanceData.filter(a => a.status === 'absent').length;
+        const avgPercentage = totalClasses > 0 ? ((totalPresent / (totalPresent + totalAbsent)) * 100).toFixed(1) : 0;
+        
+        document.getElementById('totalClasses').textContent = totalClasses;
+        document.getElementById('totalPresent').textContent = totalPresent;
+        document.getElementById('totalAbsent').textContent = totalAbsent;
+        document.getElementById('avgPercentage').textContent = avgPercentage + '%';
+    }
+    
+    // Update charts
+    function updateCharts() {
+        // Subject-wise chart
+        const subjectData = {};
+        attendanceData.forEach(a => {
+            if (!subjectData[a.subject]) {
+                subjectData[a.subject] = { present: 0, absent: 0, total: 0 };
+            }
+            if (a.status === 'present') {
+                subjectData[a.subject].present++;
+            } else {
+                subjectData[a.subject].absent++;
+            }
+            subjectData[a.subject].total++;
+        });
+        
+        const subjects = Object.keys(subjectData);
+        const presentData = subjects.map(s => subjectData[s].present);
+        const absentData = subjects.map(s => subjectData[s].absent);
+        
+        if (subjectChart) {
+            subjectChart.destroy();
+        }
+        
+        const ctx1 = document.getElementById('subjectChart').getContext('2d');
+        subjectChart = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: subjects,
+                datasets: [
+                    {
+                        label: 'Present',
+                        data: presentData,
+                        backgroundColor: '#28a745',
+                        borderRadius: 5
+                    },
+                    {
+                        label: 'Absent',
+                        data: absentData,
+                        backgroundColor: '#dc3545',
+                        borderRadius: 5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Daily trend chart
+        const dailyData = {};
+        attendanceData.forEach(a => {
+            const date = a.date;
+            if (!dailyData[date]) {
+                dailyData[date] = { present: 0, absent: 0 };
+            }
+            if (a.status === 'present') {
+                dailyData[date].present++;
+            } else {
+                dailyData[date].absent++;
+            }
+        });
+        
+        const dates = Object.keys(dailyData).sort();
+        const dailyPresent = dates.map(d => dailyData[d].present);
+        const dailyAbsent = dates.map(d => dailyData[d].absent);
+        
+        if (trendChart) {
+            trendChart.destroy();
+        }
+        
+        const ctx2 = document.getElementById('trendChart').getContext('2d');
+        trendChart = new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: dates.map(d => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })),
+                datasets: [
+                    {
+                        label: 'Present',
+                        data: dailyPresent,
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Absent',
+                        data: dailyAbsent,
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Display table with pagination
+    function displayTable(page) {
+        currentPage = page;
+        const start = (page - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const pageData = attendanceData.slice(start, end);
+        
+        const tbody = document.getElementById('attendanceTableBody');
+        tbody.innerHTML = '';
+        
+        if (pageData.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-5">
+                        <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+                        <p class="text-muted">No attendance records found</p>
+                    </td>
+                </tr>
+            `;
+        } else {
+            pageData.forEach(a => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <span class="badge bg-light text-dark">
+                            <i class="bi bi-calendar me-1"></i>${a.date}
+                        </span>
+                    </td>
+                    <td><span class="badge bg-secondary">P${a.period}</span></td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                <i class="bi bi-person-circle text-primary"></i>
+                            </div>
+                            <strong>${a.student}</strong>
+                        </div>
+                    </td>
+                    <td>${a.roll}</td>
+                    <td>${a.subject}</td>
+                    <td>
+                        ${a.status === 'present' 
+                            ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Present</span>'
+                            : '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Absent</span>'
+                        }
+                    </td>
+                    <td><small>${a.marked_by}</small></td>
+                    <td><small class="text-muted">${new Date().toLocaleTimeString()}</small></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        updatePagination();
+    }
+    
+    // Update pagination
+    function updatePagination() {
+        const totalPages = Math.ceil(attendanceData.length / rowsPerPage);
+        const pagination = document.getElementById('tablePagination');
+        pagination.innerHTML = '';
+        
+        if (totalPages <= 1) return;
+        
+        const ul = document.createElement('ul');
+        ul.className = 'pagination';
+        
+        // Previous button
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1})"><i class="bi bi-chevron-left"></i></a>`;
+        ul.appendChild(prevLi);
+        
+        // Page numbers
+        for (let i = 1; i <= totalPages; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i}</a>`;
+            ul.appendChild(li);
+        }
+        
+        // Next button
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1})"><i class="bi bi-chevron-right"></i></a>`;
+        ul.appendChild(nextLi);
+        
+        pagination.appendChild(ul);
+    }
+    
+    // Change page
+    function changePage(page) {
+        displayTable(page);
+    }
+    
+    // Refresh data
+    function refreshData() {
+        applyFilters();
+    }
+    
+    // Export to Excel
+    function exportToExcel() {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(attendanceData);
+        XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+        XLSX.writeFile(wb, 'attendance_report.xlsx');
+    }
+    
+    // Export to CSV
+    function exportToCSV() {
+        const headers = ['Date', 'Period', 'Student', 'Roll No', 'Subject', 'Status', 'Marked By'];
+        const csvData = attendanceData.map(a => [
+            a.date,
+            a.period,
+            a.student,
+            a.roll,
+            a.subject,
+            a.status,
+            a.marked_by
+        ]);
+        
+        csvData.unshift(headers);
+        
+        const csvContent = csvData.map(row => row.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'attendance_report.csv';
+        a.click();
+    }
+    
+    // Show loading state
+    function showLoading() {
+        const tbody = document.getElementById('attendanceTableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading attendance data...</p>
+                </td>
+            </tr>
+        `;
+    }
+    
+    // Hide loading state
+    function hideLoading() {
+        // Loading is hidden when data is displayed
+    }
+    
+    // Show error message
+    function showError(message) {
+        const tbody = document.getElementById('attendanceTableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-5">
+                    <i class="bi bi-exclamation-triangle fs-1 text-danger mb-3"></i>
+                    <p class="text-danger">${message}</p>
+                    <button class="btn btn-sm btn-primary" onclick="applyFilters()">
+                        <i class="bi bi-arrow-repeat me-2"></i>Retry
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+    
+    // Auto-refresh every 5 minutes
+    setInterval(refreshData, 300000);
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl + R to refresh
+        if (e.ctrlKey && e.key === 'r') {
+            e.preventDefault();
+            refreshData();
+        }
+        // Ctrl + E to export
+        if (e.ctrlKey && e.key === 'e') {
+            e.preventDefault();
+            exportToExcel();
+        }
+    });
+</script>
+
+<!-- Load SheetJS for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+{% endblock %}

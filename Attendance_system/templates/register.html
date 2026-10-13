@@ -1,0 +1,664 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center min-vh-100 align-items-start py-5">
+    <div class="col-md-10 col-lg-8 col-xl-7">
+        <!-- Registration Card -->
+        <div class="card border-0 shadow-lg fade-in">
+            <div class="card-header bg-transparent text-center pt-4 pb-0 border-0">
+                <div class="feature-icon mx-auto mb-3">
+                    <i class="bi bi-person-plus-fill fs-1 text-white"></i>
+                </div>
+                <h2 class="fw-bold mb-1">Create New Account</h2>
+                <p class="text-muted">Join the Smart Attendance System today</p>
+            </div>
+            
+            <div class="card-body px-4 py-4">
+                <!-- Role Selection Tabs -->
+                <div class="role-selector mb-4">
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="role" id="roleStudent" value="student" checked>
+                        <label class="btn btn-outline-primary py-3" for="roleStudent">
+                            <i class="bi bi-person-circle me-2"></i>Register as Student
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="role" id="roleTeacher" value="teacher">
+                        <label class="btn btn-outline-primary py-3" for="roleTeacher">
+                            <i class="bi bi-person-badge me-2"></i>Register as Teacher
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Registration Form -->
+                <form method="POST" action="{{ url_for('register') }}" class="needs-validation" novalidate>
+                    <!-- Common Fields for Both Roles -->
+                    <div class="row g-3">
+                        <!-- Full Name -->
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="name" 
+                                       name="name" 
+                                       placeholder="Enter your full name"
+                                       required>
+                                <label for="name">
+                                    <i class="bi bi-person me-2"></i>Full Name
+                                </label>
+                                <div class="invalid-feedback">
+                                    Please enter your full name.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Email -->
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="email" 
+                                       class="form-control" 
+                                       id="email" 
+                                       name="email" 
+                                       placeholder="name@example.com"
+                                       required>
+                                <label for="email">
+                                    <i class="bi bi-envelope me-2"></i>Email Address
+                                </label>
+                                <div class="invalid-feedback">
+                                    Please enter a valid email address.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <!-- Username -->
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="username" 
+                                       name="username" 
+                                       placeholder="Choose username"
+                                       required>
+                                <label for="username">
+                                    <i class="bi bi-at me-2"></i>Username
+                                </label>
+                                <div class="invalid-feedback">
+                                    Please choose a username.
+                                </div>
+                                <small class="text-muted" id="usernameHelp">Username must be unique</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Password -->
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="password" 
+                                       class="form-control" 
+                                       id="password" 
+                                       name="password" 
+                                       placeholder="Create password"
+                                       required
+                                       minlength="6">
+                                <label for="password">
+                                    <i class="bi bi-lock me-2"></i>Password
+                                </label>
+                                <div class="invalid-feedback">
+                                    Password must be at least 6 characters.
+                                </div>
+                                <div class="password-strength mt-2">
+                                    <div class="progress" style="height: 5px;">
+                                        <div class="progress-bar" role="progressbar" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Student Specific Fields -->
+                    <div id="studentFields" class="student-fields">
+                        <div class="row g-3">
+                            <!-- Roll Number -->
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="roll_number" 
+                                           name="roll_number" 
+                                           placeholder="Enter roll number">
+                                    <label for="roll_number">
+                                        <i class="bi bi-123 me-2"></i>Roll Number
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        Please enter your roll number.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Class/Grade -->
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <select class="form-select" id="class_name" name="class_name">
+                                        <option value="">Select your class</option>
+                                        <option value="BTech CSE 1st Year">BTech CSE 1st Year</option>
+                                        <option value="BTech CSE 2nd Year">BTech CSE 2nd Year</option>
+                                        <option value="BTech CSE 3rd Year">BTech CSE 3rd Year</option>
+                                        <option value="BTech CSE 4th Year">BTech CSE 4th Year</option>
+                                        <option value="BTech ECE 1st Year">BTech ECE 1st Year</option>
+                                        <option value="BTech ECE 2nd Year">BTech ECE 2nd Year</option>
+                                        <option value="BTech ECE 3rd Year">BTech ECE 3rd Year</option>
+                                        <option value="BTech ECE 4th Year">BTech ECE 4th Year</option>
+                                        <option value="BTech ME 1st Year">BTech ME 1st Year</option>
+                                        <option value="BTech ME 2nd Year">BTech ME 2nd Year</option>
+                                        <option value="BTech ME 3rd Year">BTech ME 3rd Year</option>
+                                        <option value="BTech ME 4th Year">BTech ME 4th Year</option>
+                                        <option value="10th Grade">10th Grade</option>
+                                        <option value="11th Grade">11th Grade</option>
+                                        <option value="12th Grade">12th Grade</option>
+                                    </select>
+                                    <label for="class_name">
+                                        <i class="bi bi-building me-2"></i>Class/Grade
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        Please select your class.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Teacher Specific Fields -->
+                    <div id="teacherFields" class="teacher-fields" style="display: none;">
+                        <div class="row g-3">
+                            <!-- Teacher ID -->
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="teacher_id" 
+                                           name="teacher_id" 
+                                           placeholder="Enter teacher ID">
+                                    <label for="teacher_id">
+                                        <i class="bi bi-card-heading me-2"></i>Teacher ID
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        Please enter your teacher ID.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Department -->
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <select class="form-select" id="department" name="department">
+                                        <option value="">Select department</option>
+                                        <option value="Computer Science">Computer Science</option>
+                                        <option value="Information Technology">Information Technology</option>
+                                        <option value="Electronics">Electronics</option>
+                                        <option value="Electrical">Electrical</option>
+                                        <option value="Mechanical">Mechanical</option>
+                                        <option value="Civil">Civil</option>
+                                        <option value="Mathematics">Mathematics</option>
+                                        <option value="Physics">Physics</option>
+                                        <option value="Chemistry">Chemistry</option>
+                                    </select>
+                                    <label for="department">
+                                        <i class="bi bi-building me-2"></i>Department
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        Please select your department.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <!-- Qualification -->
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="qualification" 
+                                           name="qualification" 
+                                           placeholder="e.g., M.Tech, PhD">
+                                    <label for="qualification">
+                                        <i class="bi bi-mortarboard me-2"></i>Qualification
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Phone Number -->
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="tel" 
+                                           class="form-control" 
+                                           id="phone" 
+                                           name="phone" 
+                                           placeholder="Enter phone number"
+                                           pattern="[0-9]{10}">
+                                    <label for="phone">
+                                        <i class="bi bi-telephone me-2"></i>Phone Number
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        Please enter a valid 10-digit phone number.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Terms and Conditions -->
+                    <div class="form-check mb-4">
+                        <input type="checkbox" class="form-check-input" id="terms" required>
+                        <label class="form-check-label" for="terms">
+                            I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a> and 
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a>
+                        </label>
+                        <div class="invalid-feedback">
+                            You must agree to the terms and conditions.
+                        </div>
+                    </div>
+                    
+                    <!-- Hidden Role Field -->
+                    <input type="hidden" name="role" id="selectedRole" value="student">
+                    
+                    <!-- Register Button -->
+                    <button type="submit" class="btn btn-primary w-100 py-3 mb-3 fw-bold">
+                        <i class="bi bi-person-plus me-2"></i>Create Account
+                    </button>
+                    
+                    <!-- Login Link -->
+                    <div class="text-center">
+                        <p class="mb-0">
+                            Already have an account? 
+                            <a href="{{ url_for('login') }}" class="text-decoration-none fw-bold">
+                                Login here <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Registration Benefits -->
+        <div class="row g-3 mt-4">
+            <div class="col-4">
+                <div class="text-center">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-3 mx-auto mb-2" style="width: 60px; height: 60px;">
+                        <i class="bi bi-shield-check text-primary fs-3"></i>
+                    </div>
+                    <h6 class="small fw-bold mb-0">Secure</h6>
+                    <small class="text-muted">Data protected</small>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="text-center">
+                    <div class="bg-success bg-opacity-10 rounded-circle p-3 mx-auto mb-2" style="width: 60px; height: 60px;">
+                        <i class="bi bi-clock-history text-success fs-3"></i>
+                    </div>
+                    <h6 class="small fw-bold mb-0">Quick</h6>
+                    <small class="text-muted">Easy registration</small>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="text-center">
+                    <div class="bg-info bg-opacity-10 rounded-circle p-3 mx-auto mb-2" style="width: 60px; height: 60px;">
+                        <i class="bi bi-people text-info fs-3"></i>
+                    </div>
+                    <h6 class="small fw-bold mb-0">Community</h6>
+                    <small class="text-muted">Join now</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-file-text me-2"></i>Terms and Conditions
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Acceptance of Terms</h6>
+                <p class="small">By registering for the Smart Attendance System, you agree to comply with and be bound by these terms and conditions.</p>
+                
+                <h6>2. User Accounts</h6>
+                <p class="small">You are responsible for maintaining the confidentiality of your account credentials. Any activities under your account are your responsibility.</p>
+                
+                <h6>3. Face Data Collection</h6>
+                <p class="small">As part of the attendance system, your face images will be captured and stored securely for recognition purposes. This data will only be used for attendance marking.</p>
+                
+                <h6>4. Privacy</h6>
+                <p class="small">Your personal information will be handled according to our Privacy Policy. We do not share your data with third parties.</p>
+                
+                <h6>5. Acceptable Use</h6>
+                <p class="small">You agree to use the system only for legitimate attendance purposes. Any attempt to manipulate or bypass the system is prohibited.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Privacy Policy Modal -->
+<div class="modal fade" id="privacyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-shield-lock me-2"></i>Privacy Policy
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Data Collection</h6>
+                <p class="small">We collect the following information: name, email, role-specific details (roll number/teacher ID), and face images for recognition.</p>
+                
+                <h6>Data Usage</h6>
+                <p class="small">Your data is used solely for attendance management and system functionality. Face images are converted to mathematical encodings and not shared.</p>
+                
+                <h6>Data Security</h6>
+                <p class="small">All data is encrypted and stored securely. Passwords are hashed, and face encodings cannot be reversed to original images.</p>
+                
+                <h6>Data Retention</h6>
+                <p class="small">Your data is retained while your account is active. You may request deletion by contacting the administrator.</p>
+                
+                <h6>Your Rights</h6>
+                <p class="small">You have the right to access, correct, or delete your personal information. Contact the admin for such requests.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" data-bs-dismiss="modal">I Accept</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+    .min-vh-100 {
+        min-height: 100vh;
+    }
+    
+    .feature-icon {
+        width: 70px;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        color: white;
+    }
+    
+    /* Role Selector Styles */
+    .btn-check:checked + .btn-outline-primary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border-color: transparent;
+    }
+    
+    .btn-outline-primary {
+        border: 2px solid #667eea;
+        color: #667eea;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #667eea20, #764ba220);
+        border-color: #667eea;
+        color: #667eea;
+        transform: translateY(-2px);
+    }
+    
+    .btn-check:checked + .btn-outline-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    /* Form Field Animations */
+    .form-floating > .form-control:focus ~ label,
+    .form-floating > .form-control:not(:placeholder-shown) ~ label {
+        color: #667eea;
+        opacity: 1;
+    }
+    
+    .form-floating > .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        transform: translateY(-2px);
+        transition: all 0.3s ease;
+    }
+    
+    /* Field Transition */
+    .student-fields, .teacher-fields {
+        transition: all 0.5s ease;
+        overflow: hidden;
+    }
+    
+    .student-fields.show, .teacher-fields.show {
+        opacity: 1;
+        max-height: 500px;
+    }
+    
+    /* Password Strength Indicator */
+    .password-strength .progress-bar {
+        transition: width 0.3s ease;
+    }
+    
+    /* Benefit Cards */
+    .bg-opacity-10 {
+        --bs-bg-opacity: 0.1;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .feature-icon i {
+            font-size: 1.5rem !important;
+        }
+        
+        .btn-outline-primary {
+            font-size: 0.9rem;
+        }
+    }
+    
+    /* Terms Checkbox */
+    .form-check-input:checked {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+    
+    .form-check-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    /* Modal Styles */
+    .modal-content {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    
+    .modal-header {
+        border-bottom: none;
+    }
+    
+    .modal-footer {
+        border-top: none;
+    }
+    
+    h6 {
+        color: #333;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    p.small {
+        color: #666;
+        line-height: 1.5;
+    }
+</style>
+
+<!-- Form Validation and Dynamic Fields Script -->
+<script>
+    (function() {
+        'use strict';
+        
+        // Fetch all forms that need validation
+        var forms = document.querySelectorAll('.needs-validation');
+        
+        // Loop over them and prevent submission
+        Array.prototype.slice.call(forms).forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+    
+    // Role Selection Logic
+    document.addEventListener('DOMContentLoaded', function() {
+        const studentRadio = document.getElementById('roleStudent');
+        const teacherRadio = document.getElementById('roleTeacher');
+        const studentFields = document.getElementById('studentFields');
+        const teacherFields = document.getElementById('teacherFields');
+        const selectedRole = document.getElementById('selectedRole');
+        
+        // Student fields (make required)
+        const studentInputs = studentFields.querySelectorAll('input, select');
+        
+        // Teacher fields (make required)
+        const teacherInputs = teacherFields.querySelectorAll('input, select');
+        
+        function toggleRoleFields() {
+            if (studentRadio.checked) {
+                // Show student fields, hide teacher fields
+                studentFields.style.display = 'block';
+                teacherFields.style.display = 'none';
+                selectedRole.value = 'student';
+                
+                // Make student fields required
+                studentInputs.forEach(input => {
+                    input.required = true;
+                });
+                
+                // Make teacher fields not required
+                teacherInputs.forEach(input => {
+                    input.required = false;
+                });
+                
+                // Animate
+                studentFields.classList.add('show');
+                teacherFields.classList.remove('show');
+            } else {
+                // Show teacher fields, hide student fields
+                studentFields.style.display = 'none';
+                teacherFields.style.display = 'block';
+                selectedRole.value = 'teacher';
+                
+                // Make teacher fields required
+                teacherInputs.forEach(input => {
+                    input.required = true;
+                });
+                
+                // Make student fields not required
+                studentInputs.forEach(input => {
+                    input.required = false;
+                });
+                
+                // Animate
+                teacherFields.classList.add('show');
+                studentFields.classList.remove('show');
+            }
+        }
+        
+        // Add event listeners
+        studentRadio.addEventListener('change', toggleRoleFields);
+        teacherRadio.addEventListener('change', toggleRoleFields);
+        
+        // Initial call
+        toggleRoleFields();
+    });
+    
+    // Password Strength Indicator
+    document.getElementById('password').addEventListener('input', function(e) {
+        const password = e.target.value;
+        const strengthBar = document.querySelector('.password-strength .progress-bar');
+        let strength = 0;
+        
+        if (password.length >= 6) strength += 25;
+        if (password.match(/[a-z]+/)) strength += 25;
+        if (password.match(/[A-Z]+/)) strength += 25;
+        if (password.match(/[0-9]+/)) strength += 25;
+        
+        strengthBar.style.width = strength + '%';
+        
+        if (strength <= 25) {
+            strengthBar.className = 'progress-bar bg-danger';
+        } else if (strength <= 50) {
+            strengthBar.className = 'progress-bar bg-warning';
+        } else if (strength <= 75) {
+            strengthBar.className = 'progress-bar bg-info';
+        } else {
+            strengthBar.className = 'progress-bar bg-success';
+        }
+    });
+    
+    // Username availability check (optional)
+    document.getElementById('username').addEventListener('blur', function(e) {
+        const username = e.target.value;
+        if (username.length < 3) return;
+        
+        // You can implement AJAX call here to check username availability
+        // For now, just show a hint
+        const helpText = document.getElementById('usernameHelp');
+        helpText.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Username available';
+        helpText.className = 'text-success';
+    });
+    
+    // Phone number validation
+    document.getElementById('phone').addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+        if (this.value.length > 10) {
+            this.value = this.value.slice(0, 10);
+        }
+    });
+    
+    // Roll number format (optional)
+    document.getElementById('roll_number').addEventListener('input', function(e) {
+        this.value = this.value.toUpperCase();
+    });
+    
+    // Teacher ID format (optional)
+    document.getElementById('teacher_id').addEventListener('input', function(e) {
+        this.value = this.value.toUpperCase();
+    });
+    
+    // Auto-generate username from name (optional enhancement)
+    document.getElementById('name').addEventListener('blur', function(e) {
+        const name = e.target.value;
+        const usernameField = document.getElementById('username');
+        
+        if (usernameField.value === '') {
+            // Generate username from name (lowercase, remove spaces)
+            const generatedUsername = name.toLowerCase().replace(/\s+/g, '') + Math.floor(Math.random() * 100);
+            usernameField.value = generatedUsername;
+        }
+    });
+</script>
+{% endblock %}

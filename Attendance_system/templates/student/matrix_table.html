@@ -1,0 +1,634 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient text-white border-0">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h2 class="display-6 fw-bold mb-2">
+                            <i class="bi bi-grid-3x3 me-3"></i>Attendance Matrix: {{ subject.name }}
+                        </h2>
+                        <p class="lead mb-0">
+                            <i class="bi bi-person-circle me-2"></i>{{ current_user.name }} | 
+                            <i class="bi bi-qr-code me-2"></i>{{ current_user.roll_number }} |
+                            <i class="bi bi-calendar me-2"></i>{{ month }}/{{ year }}
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <a href="{{ url_for('student_matrix') }}" class="btn btn-light me-2">
+                            <i class="bi bi-arrow-left me-2"></i>Back
+                        </a>
+                        <button class="btn btn-light" onclick="exportMatrix()">
+                            <i class="bi bi-download me-2"></i>Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Matrix Controls -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Change Month/Year</label>
+                        <div class="d-flex gap-2">
+                            <select class="form-select" id="monthSelect">
+                                <option value="1" {% if month == '1' %}selected{% endif %}>January</option>
+                                <option value="2" {% if month == '2' %}selected{% endif %}>February</option>
+                                <option value="3" {% if month == '3' %}selected{% endif %}>March</option>
+                                <option value="4" {% if month == '4' %}selected{% endif %}>April</option>
+                                <option value="5" {% if month == '5' %}selected{% endif %}>May</option>
+                                <option value="6" {% if month == '6' %}selected{% endif %}>June</option>
+                                <option value="7" {% if month == '7' %}selected{% endif %}>July</option>
+                                <option value="8" {% if month == '8' %}selected{% endif %}>August</option>
+                                <option value="9" {% if month == '9' %}selected{% endif %}>September</option>
+                                <option value="10" {% if month == '10' %}selected{% endif %}>October</option>
+                                <option value="11" {% if month == '11' %}selected{% endif %}>November</option>
+                                <option value="12" {% if month == '12' %}selected{% endif %}>December</option>
+                            </select>
+                            <select class="form-select" id="yearSelect" style="width: 100px;">
+                                <option value="{{ year }}" selected>{{ year }}</option>
+                                <option value="{{ year - 1 }}">{{ year - 1 }}</option>
+                                <option value="{{ year + 1 }}">{{ year + 1 }}</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="changeMonthYear()">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Quick Stats</label>
+                        <div class="d-flex gap-3">
+                            <div>
+                                <small class="text-muted d-block">Total Days</small>
+                                <span class="fw-bold">{{ dates|length }}</span>
+                            </div>
+                            <div>
+                                <small class="text-muted d-block">Present</small>
+                                {% set present_count = matrix.values()|select('equalto', 'present')|list|length %}
+                                <span class="fw-bold text-success">{{ present_count }}</span>
+                            </div>
+                            <div>
+                                <small class="text-muted d-block">Absent</small>
+                                {% set absent_count = matrix.values()|select('equalto', 'absent')|list|length %}
+                                <span class="fw-bold text-danger">{{ absent_count }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">View Options</label>
+                        <div class="btn-group w-100">
+                            <button class="btn btn-outline-primary" onclick="toggleWeekends()">
+                                <i class="bi bi-calendar-week"></i> Hide Weekends
+                            </button>
+                            <button class="btn btn-outline-success" onclick="highlightPresent()">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="highlightAbsent()">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Matrix Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="matrix-container">
+                    <table class="matrix-table" id="matrixTable">
+                        <thead>
+                            <tr>
+                                <th class="date-header">Date</th>
+                                <th class="period-header">Day</th>
+                                {% for period in periods %}
+                                    <th class="period-header">Period {{ period }}</th>
+                                {% endfor %}
+                                <th class="summary-header">Daily Summary</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for date in dates %}
+                                <tr class="date-row" data-date="{{ date }}" data-day="{{ date.strftime('%A') }}">
+                                    <td class="date-cell">
+                                        <strong>{{ date.strftime('%d %b, %Y') }}</strong>
+                                    </td>
+                                    <td class="day-cell text-center">
+                                        <span class="badge {% if date.strftime('%A') in ['Saturday', 'Sunday'] %}bg-warning{% else %}bg-info{% endif %}">
+                                            {{ date.strftime('%A') }}
+                                        </span>
+                                    </td>
+                                    
+                                    {% for period in periods %}
+                                        {% set key = date ~ '_' ~ period %}
+                                        <td class="matrix-cell {% if matrix[key] == 'present' %}present-cell{% elif matrix[key] == 'absent' %}absent-cell{% endif %} text-center">
+                                            {% if matrix[key] %}
+                                                {% if matrix[key] == 'present' %}
+                                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                                    <span class="status-text">Present</span>
+                                                {% else %}
+                                                    <i class="bi bi-x-circle-fill text-danger"></i>
+                                                    <span class="status-text">Absent</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                    
+                                    <td class="summary-cell text-center">
+                                        {% set day_present = 0 %}
+                                        {% set day_total = 0 %}
+                                        {% for period in periods %}
+                                            {% set key = date ~ '_' ~ period %}
+                                            {% if matrix[key] %}
+                                                {% set day_total = day_total + 1 %}
+                                                {% if matrix[key] == 'present' %}
+                                                    {% set day_present = day_present + 1 %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if day_total > 0 %}
+                                            <span class="badge {% if day_present == day_total %}bg-success{% elif day_present > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ day_present }}/{{ day_total }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">No Class</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="2" class="text-end"><strong>Total:</strong></td>
+                                {% for period in periods %}
+                                    <td class="text-center">
+                                        {% set period_present = 0 %}
+                                        {% set period_total = 0 %}
+                                        {% for date in dates %}
+                                            {% set key = date ~ '_' ~ period %}
+                                            {% if matrix[key] %}
+                                                {% set period_total = period_total + 1 %}
+                                                {% if matrix[key] == 'present' %}
+                                                    {% set period_present = period_present + 1 %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if period_total > 0 %}
+                                            <span class="badge {% if period_present == period_total %}bg-success{% elif period_present > period_total/2 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ period_present }}/{{ period_total }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">-</span>
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mt-4 g-4">
+    <div class="col-md-3">
+        <div class="card stat-card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-primary bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-calendar-check text-primary"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ dates|length }}</h3>
+                <p class="text-muted small mb-0">Total Days</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-success bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-check-circle text-success"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ present_count }}</h3>
+                <p class="text-muted small mb-0">Total Present</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-danger bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-x-circle text-danger"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ absent_count }}</h3>
+                <p class="text-muted small mb-0">Total Absent</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-info bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-percent text-info"></i>
+                </div>
+                {% set total_percentage = (present_count / (present_count + absent_count) * 100) if (present_count + absent_count) > 0 else 0 %}
+                <h3 class="fw-bold mb-1">{{ '%.1f'|format(total_percentage) }}%</h3>
+                <p class="text-muted small mb-0">Attendance %</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Matrix Legend -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-4 align-items-center">
+                    <span class="fw-bold me-3">Legend:</span>
+                    <div class="d-flex align-items-center">
+                        <div class="legend-box present-cell me-2"></div>
+                        <span>Present</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="legend-box absent-cell me-2"></div>
+                        <span>Absent</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="legend-box bg-light border me-2"></div>
+                        <span>No Class</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="legend-box bg-warning me-2" style="width: 20px; height: 20px;"></div>
+                        <span>Weekend</span>
+                    </div>
+                    <div class="ms-auto">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Hover over cells to see details
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .matrix-container {
+        overflow-x: auto;
+        max-height: 500px;
+        overflow-y: auto;
+        border-radius: 15px;
+    }
+    
+    .matrix-table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.9rem;
+        min-width: 800px;
+    }
+    
+    .matrix-table th {
+        position: sticky;
+        top: 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 12px;
+        text-align: center;
+        font-weight: 600;
+        z-index: 10;
+    }
+    
+    .matrix-table td {
+        padding: 10px;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s ease;
+    }
+    
+    .matrix-table tbody tr:hover td {
+        background: #f8f9fa;
+    }
+    
+    .date-cell {
+        font-weight: 500;
+        background: white;
+        position: sticky;
+        left: 0;
+        z-index: 5;
+    }
+    
+    .date-row:hover .date-cell {
+        background: #e9ecef;
+    }
+    
+    .matrix-cell {
+        text-align: center;
+        cursor: pointer;
+    }
+    
+    .matrix-cell:hover {
+        transform: scale(1.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 2;
+        position: relative;
+    }
+    
+    .present-cell {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    }
+    
+    .absent-cell {
+        background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    }
+    
+    .summary-cell {
+        background: #f8f9fa;
+        font-weight: 500;
+    }
+    
+    tfoot td {
+        background: #e9ecef;
+        font-weight: 500;
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+    }
+    
+    .stat-card {
+        transition: all 0.3s ease;
+        border-radius: 15px;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(102, 126, 234, 0.2) !important;
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        font-size: 1.5rem;
+    }
+    
+    .legend-box {
+        width: 25px;
+        height: 25px;
+        border-radius: 5px;
+    }
+    
+    .status-text {
+        display: none;
+    }
+    
+    /* Tooltip */
+    .matrix-cell {
+        position: relative;
+    }
+    
+    .matrix-cell:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        z-index: 100;
+    }
+    
+    /* Scrollbar */
+    .matrix-container::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    .matrix-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .matrix-container::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 10px;
+    }
+    
+    @media (max-width: 768px) {
+        .display-6 {
+            font-size: 1.5rem;
+        }
+        
+        .matrix-cell {
+            padding: 5px;
+        }
+        
+        .matrix-cell i {
+            font-size: 1rem;
+        }
+    }
+</style>
+
+<!-- JavaScript -->
+<script>
+    let showWeekends = true;
+    
+    // Change month/year
+    function changeMonthYear() {
+        const month = document.getElementById('monthSelect').value;
+        const year = document.getElementById('yearSelect').value;
+        const subjectId = {{ subject.id }};
+        
+        window.location.href = `/student/matrix-data?subject_id=${subjectId}&month=${month}&year=${year}`;
+    }
+    
+    // Toggle weekends
+    function toggleWeekends() {
+        showWeekends = !showWeekends;
+        const rows = document.querySelectorAll('.date-row');
+        
+        rows.forEach(row => {
+            const day = row.dataset.day;
+            if (day === 'Saturday' || day === 'Sunday') {
+                row.style.display = showWeekends ? '' : 'none';
+            }
+        });
+        
+        // Update button text
+        const button = event.target;
+        button.innerHTML = showWeekends ? 
+            '<i class="bi bi-calendar-week"></i> Hide Weekends' : 
+            '<i class="bi bi-calendar-week"></i> Show Weekends';
+    }
+    
+    // Highlight present cells
+    function highlightPresent() {
+        const cells = document.querySelectorAll('.present-cell');
+        cells.forEach(cell => {
+            cell.style.transform = 'scale(1.1)';
+            cell.style.boxShadow = '0 0 15px #28a745';
+        });
+        
+        setTimeout(() => {
+            cells.forEach(cell => {
+                cell.style.transform = '';
+                cell.style.boxShadow = '';
+            });
+        }, 2000);
+    }
+    
+    // Highlight absent cells
+    function highlightAbsent() {
+        const cells = document.querySelectorAll('.absent-cell');
+        cells.forEach(cell => {
+            cell.style.transform = 'scale(1.1)';
+            cell.style.boxShadow = '0 0 15px #dc3545';
+        });
+        
+        setTimeout(() => {
+            cells.forEach(cell => {
+                cell.style.transform = '';
+                cell.style.boxShadow = '';
+            });
+        }, 2000);
+    }
+    
+    // Add tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        const cells = document.querySelectorAll('.matrix-cell');
+        cells.forEach(cell => {
+            if (cell.classList.contains('present-cell')) {
+                cell.setAttribute('data-tooltip', 'Present');
+            } else if (cell.classList.contains('absent-cell')) {
+                cell.setAttribute('data-tooltip', 'Absent');
+            } else {
+                cell.setAttribute('data-tooltip', 'No Class');
+            }
+        });
+    });
+    
+    // Export matrix
+    function exportMatrix() {
+        // Create CSV
+        const csv = [];
+        const headers = ['Date', 'Day'];
+        {% for period in periods %}
+            headers.push('Period {{ period }}');
+        {% endfor %}
+        headers.push('Daily Summary');
+        csv.push(headers.join(','));
+        
+        {% for date in dates %}
+            const row = [
+                '{{ date.strftime('%Y-%m-%d') }}',
+                '{{ date.strftime('%A') }}',
+                {% for period in periods %}
+                    {% set key = date ~ '_' ~ period %}
+                    '{{ matrix.get(key, 'no class') }}',
+                {% endfor %}
+                ''
+            ];
+            csv.push(row.join(','));
+        {% endfor %}
+        
+        const csvContent = csv.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'attendance_matrix_{{ subject.name }}_{{ month }}_{{ year }}.csv';
+        a.click();
+    }
+    
+    // Print matrix
+    function printMatrix() {
+        window.print();
+    }
+    
+    // Search dates
+    function searchDates() {
+        const searchTerm = prompt('Enter date (DD/MM/YYYY) to search:');
+        if (!searchTerm) return;
+        
+        const rows = document.querySelectorAll('.date-row');
+        rows.forEach(row => {
+            const dateCell = row.querySelector('.date-cell').textContent;
+            if (dateCell.includes(searchTerm)) {
+                row.style.backgroundColor = '#fff3cd';
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl + F to search
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            searchDates();
+        }
+        // Ctrl + P to print
+        if (e.ctrlKey && e.key === 'p') {
+            e.preventDefault();
+            printMatrix();
+        }
+        // Ctrl + E to export
+        if (e.ctrlKey && e.key === 'e') {
+            e.preventDefault();
+            exportMatrix();
+        }
+        // W key to toggle weekends
+        if (e.key === 'w' && !e.ctrlKey) {
+            e.preventDefault();
+            toggleWeekends();
+        }
+        // 1 key to highlight present
+        if (e.key === '1' && !e.ctrlKey) {
+            highlightPresent();
+        }
+        // 2 key to highlight absent
+        if (e.key === '2' && !e.ctrlKey) {
+            highlightAbsent();
+        }
+    });
+    
+    // Color code based on attendance percentage
+    function getAttendanceColor(percentage) {
+        if (percentage >= 75) return '#28a745';
+        if (percentage >= 60) return '#ffc107';
+        return '#dc3545';
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart AI Attendance System</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Navbar Styling */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            padding: 15px 0;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .navbar-brand i {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-right: 8px;
+        }
+        
+        .nav-link {
+            font-weight: 500;
+            color: #333 !important;
+            transition: all 0.3s ease;
+            position: relative;
+            margin: 0 5px;
+        }
+        
+        .nav-link:hover {
+            color: #667eea !important;
+            transform: translateY(-2px);
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
+            width: 80%;
+        }
+        
+        .user-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white !important;
+            border-radius: 25px;
+            padding: 8px 20px !important;
+            margin-left: 10px;
+        }
+        
+        .user-badge i {
+            color: white !important;
+            -webkit-text-fill-color: white !important;
+        }
+        
+        .user-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .user-badge::after {
+            display: none;
+        }
+        
+        /* Main Content Container */
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            margin: 30px auto;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Alert Styling */
+        .alert {
+            border-radius: 15px;
+            border: none;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .alert-success {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            color: #1a531a;
+        }
+        
+        .alert-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: #7f1d1d;
+        }
+        
+        .alert-warning {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            color: #7d5d23;
+        }
+        
+        .alert-info {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #1a4b6d;
+        }
+        
+        /* Card Styling */
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            background: white;
+            margin-bottom: 20px;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+            border: none;
+            padding: 15px 20px;
+        }
+        
+        .card-header i {
+            margin-right: 8px;
+        }
+        
+        .card-body {
+            padding: 25px;
+        }
+        
+        /* Button Styling */
+        .btn {
+            border-radius: 10px;
+            padding: 10px 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.5s, height 0.5s;
+        }
+        
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #84fab0, #8fd3f4);
+            color: #1a531a;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(135deg, #8fd3f4, #84fab0);
+            transform: translateY(-2px);
+            color: #1a531a;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+            color: #7d5d23;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+        
+        .btn-purple {
+            background: linear-gradient(135deg, #a18cd1, #fbc2eb);
+            color: #4a2f6e;
+        }
+        
+        /* Form Styling */
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            transform: translateY(-2px);
+        }
+        
+        .form-label {
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        
+        /* Table Styling */
+        .table {
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .table thead th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+            border: none;
+            padding: 15px;
+        }
+        
+        .table tbody tr {
+            transition: all 0.3s ease;
+        }
+        
+        .table tbody tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+            transform: scale(1.01);
+        }
+        
+        /* Badge Styling */
+        .badge {
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .badge-success {
+            background: linear-gradient(135deg, #84fab0, #8fd3f4);
+            color: #1a531a;
+        }
+        
+        .badge-danger {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: #7f1d1d;
+        }
+        
+        .badge-warning {
+            background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+            color: #7d5d23;
+        }
+        
+        /* Progress Bar */
+        .progress {
+            height: 25px;
+            border-radius: 15px;
+            background-color: #f0f0f0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transition: width 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0.1) 25%, 
+                rgba(255,255,255,0.2) 50%, 
+                rgba(255,255,255,0.1) 75%);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Dashboard Cards */
+        .dashboard-card {
+            cursor: pointer;
+            height: 100%;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .dashboard-card i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        /* Matrix Table */
+        .matrix-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+        
+        .matrix-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .matrix-table td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .matrix-table tr:hover td {
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .matrix-cell-present {
+            background: rgba(132, 250, 176, 0.2);
+            color: #1a531a;
+            font-weight: 600;
+        }
+        
+        .matrix-cell-absent {
+            background: rgba(240, 147, 251, 0.2);
+            color: #7f1d1d;
+            font-weight: 600;
+        }
+        
+        /* Camera Container */
+        .camera-container {
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .camera-container video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 3px solid #667eea;
+            pointer-events: none;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { border-color: #667eea; }
+            50% { border-color: #764ba2; }
+            100% { border-color: #667eea; }
+        }
+        
+        /* Face Capture Preview */
+        .face-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .face-preview-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .face-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .face-preview-item .badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+            font-size: 10px;
+            padding: 2px 5px;
+        }
+        
+        /* Loading Spinner */
+        .spinner-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+        }
+        
+        .custom-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Footer */
+        .footer {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            margin-top: 50px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 20px;
+                margin: 15px;
+            }
+            
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
+            
+            .user-badge {
+                margin-left: 0;
+                margin-top: 10px;
+            }
+            
+            .dashboard-card {
+                min-height: 150px;
+            }
+        }
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+        }
+        
+        /* Animation Classes */
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-in-left {
+            animation: slideInLeft 0.5s ease;
+        }
+        
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .slide-in-right {
+            animation: slideInRight 0.5s ease;
+        }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        /* Print Styles */
+        @media print {
+            .navbar, .footer, .btn, .no-print {
+                display: none !important;
+            }
+            
+            .main-container {
+                box-shadow: none;
+                margin: 0;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('index') }}">
+                <i class="bi bi-camera-reels-fill"></i>
+                Smart AI Attendance
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    {% if current_user.is_authenticated %}
+                        <!-- User Info -->
+                        <li class="nav-item">
+                            <span class="nav-link user-badge">
+                                <i class="bi bi-person-circle"></i>
+                                {{ current_user.name }}
+                                <span class="badge bg-light text-dark ms-2">
+                                    {{ current_user.role|title }}
+                                </span>
+                            </span>
+                        </li>
+                        
+                        <!-- Dashboard Link -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('dashboard') }}">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        
+                        <!-- Teacher Specific Links -->
+                        {% if current_user.role == 'teacher' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('mark_attendance_page') }}">
+                                    <i class="bi bi-camera"></i> Mark Attendance
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('manage_subjects') }}">
+                                    <i class="bi bi-book"></i> Subjects
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('manage_teachers') }}">
+                                    <i class="bi bi-people"></i> Teachers
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        <!-- Student Specific Links -->
+                        {% if current_user.role == 'student' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('student_attendance') }}">
+                                    <i class="bi bi-bar-chart"></i> My Attendance
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('student_matrix') }}">
+                                    <i class="bi bi-grid-3x3"></i> Matrix View
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        <!-- Logout Link -->
+                        <li class="nav-item">
+                            <a class="nav-link text-danger" href="{{ url_for('logout') }}">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
+                        
+                    {% else %}
+                        <!-- Public Links -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('index') }}">
+                                <i class="bi bi-house"></i> Home
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">
+                                <i class="bi bi-box-arrow-in-right"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('register') }}">
+                                <i class="bi bi-person-plus"></i> Register
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <div class="container main-container fade-in">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-triangle{% elif category == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Page Content -->
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <p class="mb-0">
+                        <i class="bi bi-camera-reels-fill me-2"></i>
+                        Smart AI-Based Automatic Attendance System using Face Recognition
+                    </p>
+                    <p class="mb-0 mt-2">
+                        <small>
+                            &copy; {% if now %}{{ now().year }}{% else %}2024{% endif %} 
+                            Final Year BTech Project
+                        </small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Chart.js (optional, for graphs) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Auto-hide alerts after 5 seconds
+        setTimeout(function() {
+            $('.alert').fadeOut('slow');
+        }, 5000);
+        
+        // Add active class to current nav item
+        $(document).ready(function() {
+            var currentUrl = window.location.pathname;
+            $('.navbar-nav .nav-link').each(function() {
+                if ($(this).attr('href') === currentUrl) {
+                    $(this).addClass('active');
+                }
+            });
+        });
+        
+        // Confirm delete actions
+        function confirmDelete(message) {
+            return confirm(message || 'Are you sure you want to delete this item?');
+        }
+        
+        // Format date for display
+        function formatDate(dateString) {
+            var options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString('en-IN', options);
+        }
+        
+        // Show loading spinner
+        function showLoading(selector) {
+            $(selector).html('<div class="spinner-container"><div class="custom-spinner"></div></div>');
+        }
+        
+        // Copy to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                alert('Copied to clipboard!');
+            }, function() {
+                alert('Failed to copy!');
+            });
+        }
+        
+        // Export table to CSV
+        function exportTableToCSV(tableId, filename) {
+            var csv = [];
+            var rows = document.getElementById(tableId).querySelectorAll('tr');
+            
+            for (var i = 0; i < rows.length; i++) {
+                var row = [], cols = rows[i].querySelectorAll('td, th');
+                
+                for (var j = 0; j < cols.length; j++) {
+                    row.push(cols[j].innerText);
+                }
+                
+                csv.push(row.join(','));
+            }
+            
+            var csvFile = new Blob([csv.join('\n')], { type: 'text/csv' });
+            var downloadLink = document.createElement('a');
+            downloadLink.download = filename;
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = 'none';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+        }
+    </script>
+    
+    <!-- Page Specific Scripts -->
+    {% block scripts %}{% endblock %}
+    <!-- GLOBAL FIX FOR MODAL BACKDROP ISSUE -->
+<script>
+// Run this when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🛠️ Modal backdrop fix loaded');
+    
+    // Fix 1: Remove backdrop when ANY modal closes
+    document.addEventListener('hidden.bs.modal', function() {
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = 'auto';
+        document.body.style.paddingRight = '0';
+    });
+    
+    // Fix 2: Emergency cleanup function
+    window.fixClickIssue = function() {
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = 'auto';
+        document.body.style.paddingRight = '0';
+        console.log('✅ Click issue fixed!');
+        alert('Page is now clickable again!');
+    };
+    
+    // Fix 3: Watch for stuck backdrop
+    setInterval(function() {
+        if (document.querySelector('.modal-backdrop') && !document.querySelector('.modal.show')) {
+            console.warn('⚠️ Stuck backdrop detected, removing...');
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            document.body.classList.remove('modal-open');
+        }
+    }, 1000);
+});
+
+// Fix 4: Hotkey to fix instantly (Ctrl+Shift+K)
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.shiftKey && e.key === 'K') {
+        e.preventDefault();
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = 'auto';
+        alert('✅ Page unfrozen! You can click now.');
+    }
+});
+</script>
+</body>
+</html>

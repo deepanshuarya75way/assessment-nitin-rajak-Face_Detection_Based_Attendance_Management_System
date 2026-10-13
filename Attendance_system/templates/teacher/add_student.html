@@ -1,0 +1,655 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient text-white border-0">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h2 class="display-6 fw-bold mb-2">
+                            <i class="bi bi-person-plus me-3"></i>Add New Student
+                        </h2>
+                        <p class="lead mb-0">
+                            <i class="bi bi-person-circle me-2"></i>Register a new student and capture face images for recognition
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <a href="{{ url_for('manage_subjects') }}" class="btn btn-light">
+                            <i class="bi bi-arrow-left me-2"></i>Back to Subjects
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Student Form -->
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-lg">
+            <div class="card-header bg-transparent pt-4 pb-0 border-0">
+                <!-- Progress Steps -->
+                <div class="progress-steps mb-4">
+                    <div class="row">
+                        <div class="col-4">
+                            <div class="step-item text-center active" id="step1">
+                                <div class="step-circle bg-primary text-white mx-auto mb-2">1</div>
+                                <span class="step-label">Basic Info</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="step-item text-center" id="step2">
+                                <div class="step-circle bg-light text-muted mx-auto mb-2">2</div>
+                                <span class="step-label">Academic Details</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="step-item text-center" id="step3">
+                                <div class="step-circle bg-light text-muted mx-auto mb-2">3</div>
+                                <span class="step-label">Preview</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 3px;">
+                        <div class="progress-bar bg-primary" id="formProgress" role="progressbar" style="width: 33%;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body px-4 py-4">
+                <form method="POST" action="{{ url_for('add_student') }}" class="needs-validation" novalidate>
+                    <!-- Step 1: Basic Information -->
+                    <div class="step-content" id="step1-content">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Basic Information</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="first_name" 
+                                           name="first_name" 
+                                           placeholder="Enter first name"
+                                           required>
+                                    <label for="first_name">
+                                        <i class="bi bi-person me-2"></i>First Name <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        Please enter student's first name.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="last_name" 
+                                           name="last_name" 
+                                           placeholder="Enter last name"
+                                           required>
+                                    <label for="last_name">
+                                        <i class="bi bi-person me-2"></i>Last Name <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        Please enter student's last name.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="date" 
+                                           class="form-control" 
+                                           id="date_of_birth" 
+                                           name="date_of_birth" 
+                                           max="{{ now().strftime('%Y-%m-%d') }}">
+                                    <label for="date_of_birth">
+                                        <i class="bi bi-calendar me-2"></i>Date of Birth
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <select class="form-select" id="gender" name="gender">
+                                        <option value="">Select gender</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    <label for="gender">
+                                        <i class="bi bi-gender-ambiguous me-2"></i>Gender
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <input type="email" 
+                                           class="form-control" 
+                                           id="email" 
+                                           name="email" 
+                                           placeholder="student@example.com">
+                                    <label for="email">
+                                        <i class="bi bi-envelope me-2"></i>Email Address
+                                    </label>
+                                    <small class="text-muted">Optional, for notifications</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <input type="tel" 
+                                           class="form-control" 
+                                           id="phone" 
+                                           name="phone" 
+                                           placeholder="Enter phone number"
+                                           pattern="[0-9]{10}">
+                                    <label for="phone">
+                                        <i class="bi bi-telephone me-2"></i>Phone Number
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        Please enter a valid 10-digit phone number.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-floating mb-3">
+                                    <textarea class="form-control" 
+                                              id="address" 
+                                              name="address" 
+                                              placeholder="Enter address"
+                                              style="height: 100px"></textarea>
+                                    <label for="address">
+                                        <i class="bi bi-geo-alt me-2"></i>Address
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="d-flex justify-content-end">
+                                    <button class="btn btn-primary" type="button" onclick="nextStep(2)">
+                                        Next: Academic Details <i class="bi bi-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2: Academic Details -->
+                    <div class="step-content" id="step2-content" style="display: none;">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-building me-2 text-success"></i>Academic Details</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="roll_number" 
+                                           name="roll_number" 
+                                           placeholder="Enter roll number"
+                                           required>
+                                    <label for="roll_number">
+                                        <i class="bi bi-qr-code me-2"></i>Roll Number <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        Please enter student's roll number.
+                                    </div>
+                                    <small class="text-muted">Must be unique</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <select class="form-select" id="class_name" name="class_name" required>
+                                        <option value="">Select class/grade</option>
+                                        <option value="BTech CSE 1st Year">BTech CSE 1st Year</option>
+                                        <option value="BTech CSE 2nd Year">BTech CSE 2nd Year</option>
+                                        <option value="BTech CSE 3rd Year">BTech CSE 3rd Year</option>
+                                        <option value="BTech CSE 4th Year">BTech CSE 4th Year</option>
+                                        <option value="BTech ECE 1st Year">BTech ECE 1st Year</option>
+                                        <option value="BTech ECE 2nd Year">BTech ECE 2nd Year</option>
+                                        <option value="BTech ECE 3rd Year">BTech ECE 3rd Year</option>
+                                        <option value="BTech ECE 4th Year">BTech ECE 4th Year</option>
+                                        <option value="BTech ME 1st Year">BTech ME 1st Year</option>
+                                        <option value="BTech ME 2nd Year">BTech ME 2nd Year</option>
+                                        <option value="BTech ME 3rd Year">BTech ME 3rd Year</option>
+                                        <option value="BTech ME 4th Year">BTech ME 4th Year</option>
+                                        <option value="10th Grade">10th Grade</option>
+                                        <option value="11th Grade">11th Grade</option>
+                                        <option value="12th Grade">12th Grade</option>
+                                    </select>
+                                    <label for="class_name">
+                                        <i class="bi bi-building me-2"></i>Class/Grade <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="invalid-feedback">
+                                        Please select class/grade.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="section" 
+                                           name="section" 
+                                           placeholder="Enter section">
+                                    <label for="section">
+                                        <i class="bi bi-grid-3x3 me-2"></i>Section
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="admission_no" 
+                                           name="admission_no" 
+                                           placeholder="Enter admission number">
+                                    <label for="admission_no">
+                                        <i class="bi bi-card-text me-2"></i>Admission Number
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="date" 
+                                           class="form-control" 
+                                           id="admission_date" 
+                                           name="admission_date" 
+                                           value="{{ now().strftime('%Y-%m-%d') }}">
+                                    <label for="admission_date">
+                                        <i class="bi bi-calendar-plus me-2"></i>Admission Date
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <select class="form-select" id="blood_group" name="blood_group">
+                                        <option value="">Select blood group</option>
+                                        <option value="A+">A+</option>
+                                        <option value="A-">A-</option>
+                                        <option value="B+">B+</option>
+                                        <option value="B-">B-</option>
+                                        <option value="O+">O+</option>
+                                        <option value="O-">O-</option>
+                                        <option value="AB+">AB+</option>
+                                        <option value="AB-">AB-</option>
+                                    </select>
+                                    <label for="blood_group">
+                                        <i class="bi bi-droplet me-2"></i>Blood Group
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Note:</strong> The student will be able to login using:
+                                    <code>student_[roll_number]</code> with default password <code>student123</code>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <button class="btn btn-secondary" type="button" onclick="prevStep(1)">
+                                        <i class="bi bi-arrow-left me-2"></i>Previous
+                                    </button>
+                                    <button class="btn btn-primary" type="button" onclick="nextStep(3)">
+                                        Next: Preview <i class="bi bi-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 3: Preview -->
+                    <div class="step-content" id="step3-content" style="display: none;">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-eye me-2 text-info"></i>Preview & Confirm</h5>
+                        
+                        <div class="card bg-light border-0 mb-4">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3">Student Information Preview</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <table class="table table-sm">
+                                            <tr>
+                                                <th>Full Name:</th>
+                                                <td id="previewName">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Date of Birth:</th>
+                                                <td id="previewDOB">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Gender:</th>
+                                                <td id="previewGender">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Email:</th>
+                                                <td id="previewEmail">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Phone:</th>
+                                                <td id="previewPhone">-</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <table class="table table-sm">
+                                            <tr>
+                                                <th>Roll Number:</th>
+                                                <td id="previewRoll">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Class:</th>
+                                                <td id="previewClass">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Section:</th>
+                                                <td id="previewSection">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Admission No:</th>
+                                                <td id="previewAdmission">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Blood Group:</th>
+                                                <td id="previewBlood">-</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-success mt-3">
+                                    <i class="bi bi-check-circle me-2"></i>
+                                    <strong>Login Credentials:</strong><br>
+                                    Username: <code id="previewUsername">student_</code><br>
+                                    Password: <code>student123</code>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirm_info" required>
+                            <label class="form-check-label" for="confirm_info">
+                                I confirm that all the information provided is correct.
+                            </label>
+                            <div class="invalid-feedback">
+                                You must confirm before adding the student.
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <button class="btn btn-secondary" type="button" onclick="prevStep(2)">
+                                <i class="bi bi-arrow-left me-2"></i>Previous
+                            </button>
+                            <button type="submit" class="btn btn-success" id="submitBtn">
+                                <i class="bi bi-person-plus me-2"></i>Add Student & Continue to Face Capture
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Information Card -->
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="info-icon bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                        <i class="bi bi-info-circle text-primary fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-1">Why collect face images?</h6>
+                        <p class="small text-muted mb-0">
+                            After adding the student, you will be redirected to capture 20-30 face images. 
+                            These images are used to train the face recognition model for automatic attendance marking.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .step-item.active .step-circle {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        transform: scale(1.1);
+    }
+    
+    .step-item.active .step-label {
+        color: #667eea;
+        font-weight: 600;
+    }
+    
+    .step-label {
+        font-size: 0.85rem;
+        color: #6c757d;
+        transition: all 0.3s ease;
+    }
+    
+    .form-floating > .form-control:focus ~ label,
+    .form-floating > .form-control:not(:placeholder-shown) ~ label {
+        color: #667eea;
+        opacity: 1;
+    }
+    
+    .form-floating > .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        transform: translateY(-2px);
+        transition: all 0.3s ease;
+    }
+    
+    .table-sm th {
+        color: #6c757d;
+        font-weight: 500;
+        width: 40%;
+    }
+    
+    .info-icon {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    @media (max-width: 768px) {
+        .display-6 {
+            font-size: 1.5rem;
+        }
+        
+        .step-circle {
+            width: 35px;
+            height: 35px;
+            font-size: 0.9rem;
+        }
+        
+        .step-label {
+            font-size: 0.75rem;
+        }
+    }
+</style>
+
+<!-- JavaScript -->
+<script>
+    let currentStep = 1;
+    
+    function nextStep(step) {
+        // Validate current step
+        if (!validateStep(currentStep)) {
+            return;
+        }
+        
+        // Hide all steps
+        document.getElementById('step1-content').style.display = 'none';
+        document.getElementById('step2-content').style.display = 'none';
+        document.getElementById('step3-content').style.display = 'none';
+        
+        // Show requested step
+        document.getElementById(`step${step}-content`).style.display = 'block';
+        
+        // Update step indicators
+        for (let i = 1; i <= 3; i++) {
+            const stepItem = document.getElementById(`step${i}`);
+            if (i < step) {
+                stepItem.classList.add('active');
+                stepItem.querySelector('.step-circle').classList.add('bg-success');
+                stepItem.querySelector('.step-circle').classList.remove('bg-primary', 'bg-light');
+                stepItem.querySelector('.step-circle').innerHTML = '<i class="bi bi-check"></i>';
+            } else if (i === step) {
+                stepItem.classList.add('active');
+                stepItem.querySelector('.step-circle').classList.add('bg-primary');
+                stepItem.querySelector('.step-circle').classList.remove('bg-success', 'bg-light');
+                stepItem.querySelector('.step-circle').innerHTML = step;
+            } else {
+                stepItem.classList.remove('active');
+                stepItem.querySelector('.step-circle').classList.add('bg-light');
+                stepItem.querySelector('.step-circle').classList.remove('bg-primary', 'bg-success');
+                stepItem.querySelector('.step-circle').innerHTML = i;
+            }
+        }
+        
+        // Update progress bar
+        const progress = (step / 3) * 100;
+        document.getElementById('formProgress').style.width = progress + '%';
+        
+        // Update preview if moving to step 3
+        if (step === 3) {
+            updatePreview();
+        }
+        
+        currentStep = step;
+    }
+    
+    function prevStep(step) {
+        nextStep(step);
+    }
+    
+    function validateStep(step) {
+        if (step === 1) {
+            const firstName = document.getElementById('first_name').value;
+            const lastName = document.getElementById('last_name').value;
+            
+            if (!firstName || !lastName) {
+                alert('Please fill in all required fields in Basic Information');
+                return false;
+            }
+        } else if (step === 2) {
+            const rollNumber = document.getElementById('roll_number').value;
+            const className = document.getElementById('class_name').value;
+            
+            if (!rollNumber || !className) {
+                alert('Please fill in all required fields in Academic Details');
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    function updatePreview() {
+        // Basic Info
+        const firstName = document.getElementById('first_name').value;
+        const lastName = document.getElementById('last_name').value;
+        document.getElementById('previewName').textContent = firstName + ' ' + lastName;
+        
+        const dob = document.getElementById('date_of_birth').value;
+        document.getElementById('previewDOB').textContent = dob ? new Date(dob).toLocaleDateString() : '-';
+        
+        const gender = document.getElementById('gender');
+        document.getElementById('previewGender').textContent = gender.options[gender.selectedIndex]?.text || '-';
+        
+        document.getElementById('previewEmail').textContent = document.getElementById('email').value || '-';
+        document.getElementById('previewPhone').textContent = document.getElementById('phone').value || '-';
+        
+        // Academic Details
+        const rollNumber = document.getElementById('roll_number').value;
+        document.getElementById('previewRoll').textContent = rollNumber;
+        document.getElementById('previewUsername').textContent = `student_${rollNumber}`;
+        
+        const className = document.getElementById('class_name');
+        document.getElementById('previewClass').textContent = className.options[className.selectedIndex]?.text || '-';
+        
+        document.getElementById('previewSection').textContent = document.getElementById('section').value || '-';
+        document.getElementById('previewAdmission').textContent = document.getElementById('admission_no').value || '-';
+        
+        const bloodGroup = document.getElementById('blood_group');
+        document.getElementById('previewBlood').textContent = bloodGroup.options[bloodGroup.selectedIndex]?.text || '-';
+    }
+    
+    // Form validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    
+                    // Find first invalid input and show its step
+                    const invalidInputs = form.querySelectorAll(':invalid');
+                    if (invalidInputs.length > 0) {
+                        const firstInvalid = invalidInputs[0];
+                        if (firstInvalid.closest('#step1-content')) {
+                            nextStep(1);
+                        } else if (firstInvalid.closest('#step2-content')) {
+                            nextStep(2);
+                        }
+                    }
+                }
+                form.classList.add('was-validated');
+            });
+        });
+        
+        // Phone number validation
+        document.getElementById('phone').addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            if (this.value.length > 10) {
+                this.value = this.value.slice(0, 10);
+            }
+        });
+        
+        // Roll number uppercase
+        document.getElementById('roll_number').addEventListener('input', function(e) {
+            this.value = this.value.toUpperCase();
+        });
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            if (currentStep === 3) {
+                document.getElementById('submitBtn').click();
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,661 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Welcome Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient text-white border-0">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h2 class="display-6 fw-bold mb-2">
+                            <i class="bi bi-person-circle me-3"></i>Welcome, {{ current_user.name }}!
+                        </h2>
+                        <p class="lead mb-3">
+                            <i class="bi bi-qr-code me-2"></i>Roll No: {{ current_user.roll_number }}
+                            <span class="mx-3">|</span>
+                            <i class="bi bi-building me-2"></i>Class: {{ current_user.class_name }}
+                        </p>
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="bg-white bg-opacity-20 rounded-3 px-4 py-2">
+                                <small><i class="bi bi-book me-2"></i>Subjects Enrolled: {{ attendance_summary|length }}</small>
+                            </div>
+                            <div class="bg-white bg-opacity-20 rounded-3 px-4 py-2">
+                                <small><i class="bi bi-calendar-check me-2"></i>Today's Date: {{ now().strftime('%d %B, %Y') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <img src="https://img.freepik.com/free-vector/student-concept-illustration_114360-1206.jpg" 
+                             alt="Student Illustration" 
+                             class="img-fluid" 
+                             style="max-height: 150px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats Cards -->
+<div class="row mb-4 g-4">
+    <div class="col-md-3 col-6">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-primary bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-book text-primary"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ attendance_summary|length }}</h3>
+                <p class="text-muted small mb-0">Total Subjects</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-6">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-success bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-calendar-check text-success"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ total_classes|default(0) }}</h3>
+                <p class="text-muted small mb-0">Total Classes</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-6">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-info bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-check-circle text-info"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ total_present|default(0) }}</h3>
+                <p class="text-muted small mb-0">Total Present</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-6">
+        <div class="card stat-card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-warning bg-opacity-10 mx-auto mb-3">
+                    <i class="bi bi-x-circle text-warning"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ total_absent|default(0) }}</h3>
+                <p class="text-muted small mb-0">Total Absent</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overall Attendance Progress -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Overall Attendance</h5>
+                {% set overall_percentage = overall_percentage|default(0) %}
+                <span class="badge {% if overall_percentage >= 75 %}bg-success{% elif overall_percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %} fs-6 p-2">
+                    {{ '%.2f'|format(overall_percentage) }}%
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated 
+                        {% if overall_percentage >= 75 %}bg-success
+                        {% elif overall_percentage >= 60 %}bg-warning
+                        {% else %}bg-danger{% endif %}" 
+                        role="progressbar" 
+                        style="width: {{ overall_percentage }}%;"
+                        aria-valuenow="{{ overall_percentage }}" 
+                        aria-valuemin="0" 
+                        aria-valuemax="100">
+                        {{ '%.1f'|format(overall_percentage) }}%
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <small class="text-muted">Present: {{ total_present|default(0) }}</small>
+                    <small class="text-muted">Absent: {{ total_absent|default(0) }}</small>
+                    <small class="text-muted">Total: {{ total_classes|default(0) }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Row -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card action-card h-100 border-0 shadow-sm">
+            <div class="card-body d-flex align-items-center">
+                <div class="action-icon bg-primary bg-opacity-10 me-3">
+                    <i class="bi bi-grid-3x3 text-primary fs-3"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-1">Attendance Matrix</h5>
+                    <p class="text-muted small mb-2">View date-wise attendance for each subject</p>
+                    <a href="{{ url_for('student_matrix') }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-table me-2"></i>View Matrix
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card action-card h-100 border-0 shadow-sm">
+            <div class="card-body d-flex align-items-center">
+                <div class="action-icon bg-success bg-opacity-10 me-3">
+                    <i class="bi bi-bar-chart-line text-success fs-3"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-1">Subject Summary</h5>
+                    <p class="text-muted small mb-2">View detailed attendance by subject</p>
+                    <a href="#subject-wise" class="btn btn-sm btn-success" onclick="document.getElementById('subject-wise').scrollIntoView({behavior: 'smooth'})">
+                        <i class="bi bi-arrow-down me-2"></i>View Summary
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Subject Wise Attendance Section -->
+<div class="row mb-4" id="subject-wise">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-book me-2"></i>Subject-wise Attendance Summary</h5>
+            </div>
+            <div class="card-body">
+                {% if attendance_summary %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Teacher</th>
+                                    <th class="text-center">Total Classes</th>
+                                    <th class="text-center">Present</th>
+                                    <th class="text-center">Absent</th>
+                                    <th class="text-center">Percentage</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in attendance_summary %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="subject-icon bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                                    <i class="bi bi-journal-bookmark-fill text-primary"></i>
+                                                </div>
+                                                <strong>{{ item.subject }}</strong>
+                                            </div>
+                                        </td>
+                                        <td>{{ item.teacher }}</td>
+                                        <td class="text-center">{{ item.total }}</td>
+                                        <td class="text-center">
+                                            <span class="fw-bold text-success">{{ item.present }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="fw-bold text-danger">{{ item.absent }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress flex-grow-1 me-2" style="height: 8px; width: 80px;">
+                                                    <div class="progress-bar {% if item.percentage >= 75 %}bg-success{% elif item.percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                         role="progressbar" 
+                                                         style="width: {{ item.percentage }}%;"
+                                                         aria-valuenow="{{ item.percentage }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                                <span class="fw-bold">{{ '%.1f'|format(item.percentage) }}%</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if item.percentage >= 75 %}
+                                                <span class="badge bg-success">Good</span>
+                                            {% elif item.percentage >= 60 %}
+                                                <span class="badge bg-warning">Average</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Low</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <a href="{{ url_for('student_matrix_data') }}?subject_id={{ item.subject_id }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <img src="https://img.freepik.com/free-vector/no-data-concept-illustration_114360-2506.jpg" 
+                             alt="No Data" 
+                             class="img-fluid mb-3" 
+                             style="max-height: 150px;">
+                        <h6 class="text-muted">No attendance records found</h6>
+                        <p class="small text-muted">You are not enrolled in any subjects yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Charts Row -->
+<div class="row g-4">
+    <!-- Attendance Distribution Chart -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Attendance Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="attendanceDistributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Monthly Attendance Trend -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Monthly Attendance Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recent Attendance Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% if attendance_summary %}
+                        {% for item in attendance_summary[:5] %}
+                            <div class="timeline-item d-flex mb-3">
+                                <div class="timeline-icon bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                                    <i class="bi bi-calendar-check text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-1">{{ item.subject }}</h6>
+                                        <small class="text-muted">Last 30 days</small>
+                                    </div>
+                                    <div class="progress" style="height: 5px;">
+                                        <div class="progress-bar {% if item.percentage >= 75 %}bg-success{% elif item.percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ item.percentage }}%;">
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-1">
+                                        <small class="text-muted">Present: {{ item.present }}</small>
+                                        <small class="text-muted">Absent: {{ item.absent }}</small>
+                                        <small class="text-muted">{{ '%.1f'|format(item.percentage) }}%</small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center mb-0">No recent activity</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .bg-opacity-20 {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .stat-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border-radius: 15px;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        font-size: 1.5rem;
+    }
+    
+    .action-card {
+        transition: all 0.3s ease;
+        border-radius: 15px;
+    }
+    
+    .action-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2) !important;
+    }
+    
+    .action-icon {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 15px;
+    }
+    
+    .subject-icon {
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .table thead th {
+        background: linear-gradient(135deg, #667eea10, #764ba210);
+        color: #333;
+        font-weight: 600;
+        border-bottom: 2px solid #667eea;
+    }
+    
+    .table tbody tr {
+        transition: all 0.3s ease;
+    }
+    
+    .table tbody tr:hover {
+        background: linear-gradient(135deg, #667eea05, #764ba205);
+        transform: scale(1.01);
+    }
+    
+    .progress {
+        background-color: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        transition: width 1s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, 
+            rgba(255,255,255,0.1) 25%, 
+            rgba(255,255,255,0.2) 50%, 
+            rgba(255,255,255,0.1) 75%);
+        animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    
+    .timeline {
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+    
+    .timeline::-webkit-scrollbar {
+        width: 5px;
+    }
+    
+    .timeline::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .timeline::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 10px;
+    }
+    
+    .timeline-item {
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .timeline-item:hover {
+        background: #fff;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        transform: translateX(5px);
+    }
+    
+    .badge {
+        padding: 8px 12px;
+        font-weight: 500;
+    }
+    
+    @media (max-width: 768px) {
+        .display-6 {
+            font-size: 1.5rem;
+        }
+        
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+        }
+        
+        .action-icon {
+            width: 50px;
+            height: 50px;
+        }
+        
+        .table {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+
+<!-- JavaScript for Charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Attendance Distribution Chart
+        var ctx1 = document.getElementById('attendanceDistributionChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'doughnut',
+            data: {
+                labels: ['Present', 'Absent'],
+                datasets: [{
+                    data: [{{ total_present|default(0) }}, {{ total_absent|default(0) }}],
+                    backgroundColor: ['#28a745', '#dc3545'],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                var label = context.label || '';
+                                var value = context.raw || 0;
+                                var total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                var percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                },
+                cutout: '60%',
+                animation: {
+                    animateScale: true,
+                    animateRotate: true
+                }
+            }
+        });
+        
+        // Monthly Trend Chart
+        var ctx2 = document.getElementById('monthlyTrendChart').getContext('2d');
+        
+        // Sample data - replace with actual data from backend
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+        var presentData = [65, 70, 68, 72, 75, 80];
+        var absentData = [35, 30, 32, 28, 25, 20];
+        
+        new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [
+                    {
+                        label: 'Present %',
+                        data: presentData,
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Absent %',
+                        data: absentData,
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl + M for Matrix View
+        if (e.ctrlKey && e.key === 'm') {
+            e.preventDefault();
+            window.location.href = "{{ url_for('student_matrix') }}";
+        }
+        // Ctrl + S for Summary
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            document.getElementById('subject-wise').scrollIntoView({behavior: 'smooth'});
+        }
+    });
+    
+    // Print attendance summary
+    function printSummary() {
+        const bootstrapLink = document.querySelector('link[href*="bootstrap.min.css"]');
+        const bootstrapHref = bootstrapLink ? bootstrapLink.href : 'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css';
+        
+        var printWindow = window.open('', '_blank');
+        printWindow.document.write('<html><head><title>Attendance Summary</title>');
+        printWindow.document.write('<link href="' + bootstrapHref + '" rel="stylesheet">');
+        printWindow.document.write('<style>body { padding: 20px; }</style>');
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(document.querySelector('.table').outerHTML);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
+    
+    // Export to CSV
+    function exportToCSV() {
+        var csv = [];
+        var rows = document.querySelectorAll('table tr');
+        
+        for (var i = 0; i < rows.length; i++) {
+            var row = [], cols = rows[i].querySelectorAll('td, th');
+            
+            for (var j = 0; j < cols.length; j++) {
+                row.push(cols[j].innerText);
+            }
+            
+            csv.push(row.join(','));
+        }
+        
+        var csvFile = new Blob([csv.join('\n')], { type: 'text/csv' });
+        var downloadLink = document.createElement('a');
+        downloadLink.download = 'attendance_summary.csv';
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+        downloadLink.style.display = 'none';
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,526 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="row min-vh-80 align-items-center text-center text-lg-start">
+    <div class="col-lg-6 mb-5 mb-lg-0 fade-in">
+        <h1 class="display-3 fw-bold mb-4" style="background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Smart AI-Based Automatic Attendance System
+        </h1>
+        <p class="lead mb-4 text-muted">
+            Revolutionize your classroom attendance with cutting-edge face recognition technology. 
+            Say goodbye to manual roll calls and proxy attendance forever!
+        </p>
+        
+        <!-- Feature Pills -->
+        <div class="d-flex flex-wrap gap-2 mb-4 justify-content-center justify-content-lg-start">
+            <span class="badge bg-light text-dark p-3">
+                <i class="bi bi-camera-reels text-primary me-2"></i>Face Recognition
+            </span>
+            <span class="badge bg-light text-dark p-3">
+                <i class="bi bi-cloud-arrow-up text-success me-2"></i>Cloud Storage
+            </span>
+            <span class="badge bg-light text-dark p-3">
+                <i class="bi bi-graph-up text-info me-2"></i>Real-time Reports
+            </span>
+            <span class="badge bg-light text-dark p-3">
+                <i class="bi bi-shield-check text-warning me-2"></i>Proxy Free
+            </span>
+        </div>
+        
+        <!-- CTA Buttons -->
+        {% if not current_user.is_authenticated %}
+        <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
+            <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg px-5 py-3">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Get Started
+            </a>
+            <a href="{{ url_for('register') }}" class="btn btn-outline-primary btn-lg px-5 py-3">
+                <i class="bi bi-person-plus me-2"></i>Register Now
+            </a>
+        </div>
+        {% else %}
+        <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-5 py-3">
+                <i class="bi bi-speedometer2 me-2"></i>Go to Dashboard
+            </a>
+        </div>
+        {% endif %}
+        
+        <!-- Stats -->
+        <div class="row mt-5 g-4">
+            <div class="col-4">
+                <div class="text-center">
+                    <h3 class="fw-bold text-primary mb-0">99.9%</h3>
+                    <small class="text-muted">Accuracy Rate</small>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="text-center">
+                    <h3 class="fw-bold text-success mb-0">0.5s</h3>
+                    <small class="text-muted">Per Recognition</small>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="text-center">
+                    <h3 class="fw-bold text-info mb-0">24/7</h3>
+                    <small class="text-muted">Availability</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hero Image/Animation -->
+    <div class="col-lg-6 slide-in-right">
+        <div class="position-relative">
+            <!-- Main Image -->
+            <img src="https://img.freepik.com/free-vector/face-recognition-identification-smart-id-concept-people-heads-digital-interface_39422-668.jpg" 
+                 alt="Face Recognition Illustration" 
+                 class="img-fluid rounded-4 shadow-lg"
+                 style="transform: perspective(1000px) rotateY(-5deg);">
+            
+            <!-- Floating Cards -->
+            <div class="position-absolute top-0 start-0 translate-middle-y bg-white p-3 rounded-4 shadow-lg animate-float" 
+                 style="animation: float 3s ease-in-out infinite; max-width: 200px;">
+                <div class="d-flex align-items-center">
+                    <div class="bg-success bg-opacity-10 p-3 rounded-3 me-3">
+                        <i class="bi bi-check-circle-fill text-success fs-3"></i>
+                    </div>
+                    <div>
+                        <small class="text-muted">Today's</small>
+                        <h6 class="mb-0 fw-bold">98% Present</h6>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="position-absolute bottom-0 end-0 translate-middle-y bg-white p-3 rounded-4 shadow-lg animate-float-delay" 
+                 style="animation: float 3s ease-in-out infinite; animation-delay: 1s; max-width: 200px;">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-3 me-3">
+                        <i class="bi bi-people-fill text-primary fs-3"></i>
+                    </div>
+                    <div>
+                        <small class="text-muted">Registered</small>
+                        <h6 class="mb-0 fw-bold">500+ Students</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="row mt-6 pt-5">
+    <div class="col-12 text-center mb-5">
+        <h2 class="display-5 fw-bold mb-3">Why Choose Our System?</h2>
+        <p class="lead text-muted">Advanced features that make attendance management effortless</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Feature 1 -->
+    <div class="col-md-4 fade-in">
+        <div class="card h-100 text-center p-4">
+            <div class="feature-icon mx-auto mb-4">
+                <i class="bi bi-camera-video fs-1" style="color: #667eea;"></i>
+            </div>
+            <h4 class="fw-bold mb-3">Real-time Face Recognition</h4>
+            <p class="text-muted">Advanced AI algorithms detect and recognize faces in real-time with high accuracy, even in group settings.</p>
+            <ul class="list-unstyled text-start mt-3">
+                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>0.5 seconds per face</li>
+                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Works in low light</li>
+                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Multiple face detection</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Feature 2 -->
+    <div class="col-md-4 fade-in" style="animation-delay: 0.2s;">
+        <div class="card h-100 text-center p-4">
+            <div class="feature-icon mx-auto mb-4">
+                <i class="bi bi-shield-check fs-1" style="color: #764ba2;"></i>
+            </div>
+            <h4 class="fw-bold mb-3">Proxy Attendance Prevention</h4>
+            <p class="text-muted">Eliminate fake attendance with liveness detection and face matching against registered database.</p>
+            <ul class="list-unstyled text-start mt-3">
+                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Liveness detection</li>
+                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Photo spoofing protection</li>
+                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Unique face signatures</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Feature 3 -->
+    <div class="col-md-4 fade-in" style="animation-delay: 0.4s;">
+        <div class="card h-100 text-center p-4">
+            <div class="feature-icon mx-auto mb-4">
+                <i class="bi bi-bar-chart-line fs-1" style="color: #84fab0;"></i>
+            </div>
+            <h4 class="fw-bold mb-3">Comprehensive Analytics</h4>
+            <p class="text-muted">Get detailed insights with interactive dashboards, reports, and attendance matrices.</p>
+            <ul class="list-unstyled text-start mt-3">
+                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Subject-wise analysis</li>
+                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Date vs Period matrix</li>
+                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Export to Excel/CSV</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- How It Works Section -->
+<div class="row mt-6 pt-5">
+    <div class="col-12 text-center mb-5">
+        <h2 class="display-5 fw-bold mb-3">How It Works</h2>
+        <p class="lead text-muted">Simple 3-step process for teachers and students</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Step 1 -->
+    <div class="col-md-4">
+        <div class="card h-100 border-0 bg-transparent">
+            <div class="text-center">
+                <div class="step-number bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4" 
+                     style="width: 60px; height: 60px; font-size: 24px; font-weight: bold;">
+                    1
+                </div>
+                <h5 class="fw-bold mb-3">Register Students</h5>
+                <img src="https://img.freepik.com/free-vector/team-people-posing-with-laptop_74855-5220.jpg" 
+                     alt="Register" 
+                     class="img-fluid rounded-3 mb-3" 
+                     style="height: 150px; object-fit: cover;">
+                <p class="text-muted">Add student details and capture 20-30 face images from different angles.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 2 -->
+    <div class="col-md-4">
+        <div class="card h-100 border-0 bg-transparent">
+            <div class="text-center">
+                <div class="step-number bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4" 
+                     style="width: 60px; height: 60px; font-size: 24px; font-weight: bold;">
+                    2
+                </div>
+                <h5 class="fw-bold mb-3">Train & Recognize</h5>
+                <img src="https://img.freepik.com/free-vector/artificial-intelligence-concept_23-2148508987.jpg" 
+                     alt="Train" 
+                     class="img-fluid rounded-3 mb-3" 
+                     style="height: 150px; object-fit: cover;">
+                <p class="text-muted">System trains on face images and recognizes students automatically in classroom.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 3 -->
+    <div class="col-md-4">
+        <div class="card h-100 border-0 bg-transparent">
+            <div class="text-center">
+                <div class="step-number bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4" 
+                     style="width: 60px; height: 60px; font-size: 24px; font-weight: bold;">
+                    3
+                </div>
+                <h5 class="fw-bold mb-3">View Reports</h5>
+                <img src="https://img.freepik.com/free-vector/business-people-analyzing-statistics_1262-21372.jpg" 
+                     alt="Reports" 
+                     class="img-fluid rounded-3 mb-3" 
+                     style="height: 150px; object-fit: cover;">
+                <p class="text-muted">Teachers and students access detailed attendance reports anytime, anywhere.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Testimonials Section -->
+<div class="row mt-6 pt-5">
+    <div class="col-12 text-center mb-5">
+        <h2 class="display-5 fw-bold mb-3">What Users Say</h2>
+        <p class="lead text-muted">Trusted by educators and students worldwide</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Testimonial 1 -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex mb-3">
+                    <i class="bi bi-star-fill text-warning me-1"></i>
+                    <i class="bi bi-star-fill text-warning me-1"></i>
+                    <i class="bi bi-star-fill text-warning me-1"></i>
+                    <i class="bi bi-star-fill text-warning me-1"></i>
+                    <i class="bi bi-star-fill text-warning"></i>
+                </div>
+                <p class="card-text fst-italic mb-3">"This system saved me hours of manual attendance work. The face recognition is incredibly accurate even with 60 students in class!"</p>
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-3 me-3">
+                        <i class="bi bi-person-badge fs-4 text-primary"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0">Dr. Rajesh Kumar</h6>
+                        <small class="text-muted">Professor, Computer Science</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Testimonial 2 -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex mb-3">
+                    <i class="bi bi-star-fill text-warning me-1"></i>
+                    <i class="bi bi-star-fill text-warning me-1"></i>
+                    <i class="bi bi-star-fill text-warning me-1"></i>
+                    <i class="bi bi-star-fill text-warning me-1"></i>
+                    <i class="bi bi-star-fill text-warning"></i>
+                </div>
+                <p class="card-text fst-italic mb-3">"As a student, I love how I can track my attendance for each subject with percentages. The matrix view showing date vs period is super helpful!"</p>
+                <div class="d-flex align-items-center">
+                    <div class="bg-success bg-opacity-10 p-3 rounded-3 me-3">
+                        <i class="bi bi-person-circle fs-4 text-success"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0">Priya Sharma</h6>
+                        <small class="text-muted">BTech CSE 3rd Year</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Testimonial 3 -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex mb-3">
+                    <i class="bi bi-star-fill text-warning me-1"></i>
+                    <i class="bi bi-star-fill text-warning me-1"></i>
+                    <i class="bi bi-star-fill text-warning me-1"></i>
+                    <i class="bi bi-star-fill text-warning me-1"></i>
+                    <i class="bi bi-star-half text-warning"></i>
+                </div>
+                <p class="card-text fst-italic mb-3">"The proxy attendance problem is completely solved. The system is easy to set up and the dashboard provides all the analytics I need."</p>
+                <div class="d-flex align-items-center">
+                    <div class="bg-info bg-opacity-10 p-3 rounded-3 me-3">
+                        <i class="bi bi-person-badge fs-4 text-info"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0">Prof. Sunita Verma</h6>
+                        <small class="text-muted">HOD, Electronics Dept.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FAQ Section -->
+<div class="row mt-6 pt-5">
+    <div class="col-12 text-center mb-5">
+        <h2 class="display-5 fw-bold mb-3">Frequently Asked Questions</h2>
+        <p class="lead text-muted">Got questions? We've got answers</p>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="accordion" id="faqAccordion">
+            <!-- FAQ 1 -->
+            <div class="accordion-item mb-3 border-0 rounded-3 shadow-sm">
+                <h2 class="accordion-header">
+                    <button class="accordion-button rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                        <i class="bi bi-question-circle text-primary me-3"></i>
+                        How accurate is the face recognition?
+                    </button>
+                </h2>
+                <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Our system achieves 99.9% accuracy under normal lighting conditions. It uses deep learning models (FaceNet/DeepFace) and works well even with glasses, different angles, and slight facial hair changes.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FAQ 2 -->
+            <div class="accordion-item mb-3 border-0 rounded-3 shadow-sm">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                        <i class="bi bi-question-circle text-primary me-3"></i>
+                        How many face images are needed per student?
+                    </button>
+                </h2>
+                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        We recommend 20-30 images per student from different angles and expressions. This ensures the model learns variations and works well in different lighting conditions and head poses.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FAQ 3 -->
+            <div class="accordion-item mb-3 border-0 rounded-3 shadow-sm">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                        <i class="bi bi-question-circle text-primary me-3"></i>
+                        Can it work with existing CCTV cameras?
+                    </button>
+                </h2>
+                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Yes! The system can connect to IP cameras via RTSP stream. Simply provide the camera's RTSP URL, and the system will process the feed in real-time.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FAQ 4 -->
+            <div class="accordion-item mb-3 border-0 rounded-3 shadow-sm">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                        <i class="bi bi-question-circle text-primary me-3"></i>
+                        Is the data secure?
+                    </button>
+                </h2>
+                <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Absolutely! All face encodings are stored as mathematical vectors, not actual images. Passwords are hashed, and the system uses role-based access control. Data can be stored locally or in encrypted cloud storage.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- FAQ 5 -->
+            <div class="accordion-item mb-3 border-0 rounded-3 shadow-sm">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                        <i class="bi bi-question-circle text-primary me-3"></i>
+                        Can students view their attendance?
+                    </button>
+                </h2>
+                <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        Yes! Students have their own login where they can see subject-wise attendance summary with total classes, present, absent, and percentage. They can also view the date vs period attendance matrix.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CTA Section -->
+<div class="row mt-6 pt-5">
+    <div class="col-12">
+        <div class="card bg-gradient text-white p-5 text-center" 
+             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body py-5">
+                <h2 class="display-5 fw-bold mb-4">Ready to Transform Your Attendance System?</h2>
+                <p class="lead mb-4">Join hundreds of educational institutions already using our smart attendance system</p>
+                {% if not current_user.is_authenticated %}
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{{ url_for('register') }}" class="btn btn-light btn-lg px-5 py-3">
+                        <i class="bi bi-rocket-takeoff me-2"></i>Get Started Now
+                    </a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg px-5 py-3">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                    </a>
+                </div>
+                {% else %}
+                <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg px-5 py-3">
+                    <i class="bi bi-speedometer2 me-2"></i>Go to Dashboard
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Animation Styles -->
+<style>
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+        100% { transform: translateY(0px); }
+    }
+    
+    .animate-float {
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    .animate-float-delay {
+        animation: float 3s ease-in-out infinite;
+        animation-delay: 1s;
+    }
+    
+    .min-vh-80 {
+        min-height: 80vh;
+    }
+    
+    .mt-6 {
+        margin-top: 5rem;
+    }
+    
+    .pt-5 {
+        padding-top: 3rem;
+    }
+    
+    .feature-icon {
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        color: white;
+    }
+    
+    .step-number {
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    .accordion-item {
+        background: white;
+        overflow: hidden;
+    }
+    
+    .accordion-button:not(.collapsed) {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .accordion-button:not(.collapsed) i {
+        color: white !important;
+    }
+    
+    .accordion-button:focus {
+        box-shadow: none;
+        border-color: rgba(0,0,0,.125);
+    }
+    
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .card {
+        transition: all 0.3s ease;
+        border: 1px solid rgba(102, 126, 234, 0.1);
+    }
+    
+    .card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2) !important;
+        border-color: #667eea;
+    }
+    
+    .testimonial-card {
+        background: white;
+    }
+    
+    @media (max-width: 768px) {
+        .display-3 {
+            font-size: 2.5rem;
+        }
+        
+        .mt-6 {
+            margin-top: 3rem;
+        }
+    }
+</style>
+{% endblock %}

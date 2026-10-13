@@ -1,0 +1,682 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient text-white border-0">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h2 class="display-6 fw-bold mb-2">
+                            <i class="bi bi-camera me-3"></i>Capture Face Images
+                        </h2>
+                        <p class="lead mb-0">
+                            <i class="bi bi-person-circle me-2"></i>{{ student.name }} | 
+                            <i class="bi bi-qr-code me-2"></i>{{ student.roll_number }} | 
+                            <i class="bi bi-building me-2"></i>{{ student.class_name }}
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <a href="{{ url_for('manage_subjects') }}" class="btn btn-light">
+                            <i class="bi bi-arrow-left me-2"></i>Skip for Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Section -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-lg">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-camera-video me-2"></i>Camera Feed</h5>
+                <div>
+                    <span class="badge bg-success" id="cameraStatus">
+                        <i class="bi bi-check-circle me-1"></i>Camera Active
+                    </span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="camera-container position-relative">
+                    <video id="video" width="100%" height="auto" autoplay playsinline></video>
+                    <canvas id="canvas" style="display: none;"></canvas>
+                    
+                    <!-- Face Guide Overlay -->
+                    <div class="face-guide" id="faceGuide">
+                        <div class="face-oval"></div>
+                        <div class="guide-text text-white">Position face inside oval</div>
+                    </div>
+                    
+                    <!-- Camera Controls -->
+                    <div class="camera-controls">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <button id="captureBtn" class="btn btn-primary btn-lg w-100" onclick="captureImage()">
+                                    <i class="bi bi-camera me-2"></i>Capture Face
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button id="trainBtn" class="btn btn-success btn-lg w-100" onclick="trainModel()" disabled>
+                                    <i class="bi bi-gear me-2"></i>Train Model (<span id="captureCount">0</span>/30)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Camera Settings -->
+                <div class="p-3 border-top">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <label class="form-label small text-muted mb-1">
+                                <i class="bi bi-camera-video me-1"></i>Camera
+                            </label>
+                            <select id="cameraSelect" class="form-select form-select-sm" onchange="switchCamera(this.value)">
+                                <option value="user">Front Camera</option>
+                                <option value="environment">Back Camera</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small text-muted mb-1">
+                                <i class="bi bi-lightning me-1"></i>Quality
+                            </label>
+                            <select id="qualitySelect" class="form-select form-select-sm">
+                                <option value="0.9">High</option>
+                                <option value="0.7" selected>Medium</option>
+                                <option value="0.5">Low</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small text-muted mb-1">
+                                <i class="bi bi-magic me-1"></i>Auto-Capture
+                            </label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="autoCapture" checked>
+                                <label class="form-check-label" for="autoCapture">Auto-detect face</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Progress & Tips -->
+        <div class="row mt-4 g-4">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-pie-chart me-2"></i>Capture Progress</h6>
+                        <div class="progress mb-3" style="height: 25px;">
+                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                                 role="progressbar" style="width: 0%;">0%</div>
+                        </div>
+                        <div class="d-flex justify-content-between text-center">
+                            <div>
+                                <span class="badge bg-primary" id="minCount">0</span>
+                                <small class="d-block text-muted">Minimum</small>
+                            </div>
+                            <div>
+                                <span class="badge bg-success" id="currentCount">0</span>
+                                <small class="d-block text-muted">Current</small>
+                            </div>
+                            <div>
+                                <span class="badge bg-warning" id="maxCount">30</span>
+                                <small class="d-block text-muted">Maximum</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-lightbulb me-2"></i>Capture Tips</h6>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li class="mb-2">Capture 20-30 images from different angles</li>
+                            <li class="mb-2">Ensure good lighting on face</li>
+                            <li class="mb-2">Vary expressions (smile, neutral, etc.)</li>
+                            <li class="mb-2">Move head slightly for different poses</li>
+                            <li class="mb-2">Remove glasses if possible for better accuracy</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Captured Images Column -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-lg h-100">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-images me-2"></i>Captured Images</h5>
+                <span class="badge bg-primary" id="capturedCount">0</span>
+            </div>
+            <div class="card-body">
+                <!-- Image Preview Grid -->
+                <div class="preview-grid" id="previewGrid">
+                    <div class="text-center text-muted py-5" id="emptyPreview">
+                        <i class="bi bi-camera fs-1 mb-3"></i>
+                        <p>No images captured yet</p>
+                        <small>Click 'Capture Face' to start</small>
+                    </div>
+                </div>
+                
+                <!-- Captured Images List -->
+                <div class="captured-list mt-3" id="capturedList" style="display: none;">
+                    <h6 class="fw-bold mb-2">Recent Captures</h6>
+                    <div class="list-group" id="imagesList"></div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2 mt-3">
+                    <button class="btn btn-outline-danger" onclick="clearAllImages()" id="clearBtn" disabled>
+                        <i class="bi bi-trash me-2"></i>Clear All
+                    </button>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pb-3">
+                <div class="alert alert-info small mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Minimum 20 images required for good accuracy.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-check-circle me-2"></i>Capture Complete!
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="bi bi-emoji-smile fs-1 text-success mb-3"></i>
+                <h5>Successfully captured <span id="finalCount">0</span> images!</h5>
+                <p class="text-muted">You can now train the model or capture more images.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Continue Capturing</button>
+                <button type="button" class="btn btn-success" onclick="trainModel()">Train Model Now</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .camera-container {
+        position: relative;
+        background: #000;
+        min-height: 400px;
+        max-height: 500px;
+        overflow: hidden;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .camera-container video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .face-guide {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        pointer-events: none;
+    }
+    
+    .face-oval {
+        width: 250px;
+        height: 300px;
+        border: 3px solid #667eea;
+        border-radius: 50%;
+        box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.3);
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { border-color: #667eea; }
+        50% { border-color: #764ba2; }
+        100% { border-color: #667eea; }
+    }
+    
+    .guide-text {
+        margin-top: 20px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        font-weight: 500;
+    }
+    
+    .camera-controls {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        pointer-events: all;
+    }
+    
+    .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        max-height: 400px;
+        overflow-y: auto;
+        padding: 5px;
+    }
+    
+    .preview-grid::-webkit-scrollbar {
+        width: 5px;
+    }
+    
+    .preview-grid::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .preview-grid::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 10px;
+    }
+    
+    .preview-item {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .preview-item:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .preview-item .badge {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: rgba(102, 126, 234, 0.9);
+        color: white;
+        font-size: 10px;
+    }
+    
+    .preview-item .delete-btn {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(220, 53, 69, 0.9);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .preview-item:hover .delete-btn {
+        opacity: 1;
+    }
+    
+    .captured-list {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .list-group-item {
+        transition: all 0.3s ease;
+    }
+    
+    .list-group-item:hover {
+        background: linear-gradient(135deg, #667eea10, #764ba210);
+        transform: translateX(5px);
+    }
+    
+    @media (max-width: 768px) {
+        .display-6 {
+            font-size: 1.5rem;
+        }
+        
+        .face-oval {
+            width: 200px;
+            height: 250px;
+        }
+        
+        .camera-container {
+            min-height: 300px;
+        }
+        
+        .preview-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+</style>
+
+<!-- JavaScript -->
+<script>
+    // Global variables
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const trainBtn = document.getElementById('trainBtn');
+    const previewGrid = document.getElementById('previewGrid');
+    const emptyPreview = document.getElementById('emptyPreview');
+    const capturedList = document.getElementById('capturedList');
+    const imagesList = document.getElementById('imagesList');
+    const progressBar = document.getElementById('progressBar');
+    const captureCount = document.getElementById('captureCount');
+    const currentCount = document.getElementById('currentCount');
+    const minCount = document.getElementById('minCount');
+    const capturedCount = document.getElementById('capturedCount');
+    const clearBtn = document.getElementById('clearBtn');
+    
+    const studentId = {{ student.id }};
+    const MIN_IMAGES = 20;
+    const MAX_IMAGES = 30;
+    let capturedImages = [];
+    let autoCapture = true;
+    let captureInterval = null;
+    
+    // Start camera
+    async function startCamera(facingMode = 'user') {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: facingMode
+                } 
+            });
+            video.srcObject = stream;
+            
+            document.getElementById('cameraStatus').innerHTML = '<i class="bi bi-check-circle me-1"></i>Camera Active';
+            document.getElementById('cameraStatus').className = 'badge bg-success';
+            
+            // Start auto capture if enabled
+            if (document.getElementById('autoCapture').checked) {
+                startAutoCapture();
+            }
+        } catch(err) {
+            console.error('Camera error:', err);
+            document.getElementById('cameraStatus').innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Camera Error';
+            document.getElementById('cameraStatus').className = 'badge bg-danger';
+            alert('Error accessing camera: ' + err.message);
+        }
+    }
+    
+    // Switch camera
+    function switchCamera(facingMode) {
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+        }
+        startCamera(facingMode);
+    }
+    
+    // Start auto capture
+    function startAutoCapture() {
+        if (captureInterval) {
+            clearInterval(captureInterval);
+        }
+        captureInterval = setInterval(() => {
+            if (capturedImages.length < MAX_IMAGES && autoCapture) {
+                // Simulate face detection (in real app, use face-api.js)
+                const hasFace = Math.random() > 0.3; // 70% chance of face detected
+                if (hasFace) {
+                    captureImage();
+                }
+            }
+        }, 2000);
+    }
+    
+    // Capture image
+    function captureImage() {
+        if (capturedImages.length >= MAX_IMAGES) {
+            alert(`Maximum ${MAX_IMAGES} images reached!`);
+            return;
+        }
+        
+        // Draw video frame to canvas
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Get image data with selected quality
+        const quality = parseFloat(document.getElementById('qualitySelect').value);
+        const imageData = canvas.toDataURL('image/jpeg', quality);
+        
+        // Disable capture button
+        captureBtn.disabled = true;
+        captureBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving...';
+        
+        // Send to server
+        fetch('/api/save-face', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                student_id: studentId,
+                image: imageData
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                addImageToPreview(imageData, data.count);
+                updateProgress();
+                
+                // Show success animation
+                captureBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Captured!';
+                setTimeout(() => {
+                    captureBtn.innerHTML = '<i class="bi bi-camera me-2"></i>Capture Face';
+                    captureBtn.disabled = false;
+                }, 500);
+                
+                // Show success modal when reaching minimum
+                if (data.count === MIN_IMAGES) {
+                    document.getElementById('finalCount').textContent = data.count;
+                    new bootstrap.Modal(document.getElementById('successModal')).show();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error saving image');
+            captureBtn.disabled = false;
+            captureBtn.innerHTML = '<i class="bi bi-camera me-2"></i>Capture Face';
+        });
+    }
+    
+    // Add image to preview
+    function addImageToPreview(imageData, count) {
+        // Remove empty preview if present
+        if (emptyPreview) {
+            emptyPreview.style.display = 'none';
+        }
+        
+        // Show captured list
+        capturedList.style.display = 'block';
+        
+        // Add to preview grid
+        const previewItem = document.createElement('div');
+        previewItem.className = 'preview-item';
+        previewItem.id = `preview-${count}`;
+        previewItem.innerHTML = `
+            <img src="${imageData}" alt="Face ${count}">
+            <span class="badge">${count}</span>
+            <div class="delete-btn" onclick="deleteImage(${count})">
+                <i class="bi bi-x"></i>
+            </div>
+        `;
+        previewGrid.appendChild(previewItem);
+        
+        // Add to list
+        const listItem = document.createElement('a');
+        listItem.href = '#';
+        listItem.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+        listItem.id = `list-${count}`;
+        listItem.innerHTML = `
+            <span><i class="bi bi-image me-2"></i>Image ${count}</span>
+            <small>${new Date().toLocaleTimeString()}</small>
+        `;
+        imagesList.appendChild(listItem);
+        
+        // Enable clear button
+        clearBtn.disabled = false;
+    }
+    
+    // Delete image
+    function deleteImage(count) {
+        if (confirm(`Delete image ${count}?`)) {
+            // Remove from DOM
+            const previewItem = document.getElementById(`preview-${count}`);
+            const listItem = document.getElementById(`list-${count}`);
+            
+            if (previewItem) previewItem.remove();
+            if (listItem) listItem.remove();
+            
+            // Update capturedImages array (would need server delete in production)
+            capturedImages = capturedImages.filter(img => img.count !== count);
+            
+            // Update counts
+            const newCount = capturedImages.length;
+            updateProgress();
+            
+            // Show empty preview if no images
+            if (newCount === 0) {
+                emptyPreview.style.display = 'block';
+                capturedList.style.display = 'none';
+                clearBtn.disabled = true;
+            }
+        }
+    }
+    
+    // Clear all images
+    function clearAllImages() {
+        if (confirm('Are you sure you want to delete all captured images?')) {
+            previewGrid.innerHTML = '';
+            imagesList.innerHTML = '';
+            capturedImages = [];
+            emptyPreview.style.display = 'block';
+            capturedList.style.display = 'none';
+            clearBtn.disabled = true;
+            updateProgress();
+        }
+    }
+    
+    // Update progress
+    function updateProgress() {
+        const count = document.querySelectorAll('.preview-item').length;
+        const percentage = (count / MAX_IMAGES) * 100;
+        
+        progressBar.style.width = percentage + '%';
+        progressBar.textContent = percentage.toFixed(0) + '%';
+        captureCount.textContent = count;
+        currentCount.textContent = count;
+        capturedCount.textContent = count;
+        
+        if (count >= MIN_IMAGES) {
+            trainBtn.disabled = false;
+            progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-success';
+        } else {
+            trainBtn.disabled = true;
+            progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-warning';
+        }
+        
+        if (count >= MAX_IMAGES) {
+            captureBtn.disabled = true;
+        }
+    }
+    
+    // Train model
+    function trainModel() {
+        const count = document.querySelectorAll('.preview-item').length;
+        if (count < MIN_IMAGES) {
+            alert(`Please capture at least ${MIN_IMAGES} images first!`);
+            return;
+        }
+        
+        trainBtn.disabled = true;
+        trainBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Training...';
+        
+        window.location.href = `/teacher/train-model/${studentId}`;
+    }
+    
+    // Toggle auto capture
+    document.getElementById('autoCapture').addEventListener('change', function(e) {
+        autoCapture = e.target.checked;
+        if (autoCapture) {
+            startAutoCapture();
+        } else {
+            clearInterval(captureInterval);
+        }
+    });
+    
+    // Initialize camera
+    document.addEventListener('DOMContentLoaded', function() {
+        startCamera('user');
+    });
+    
+    // Cleanup
+    window.addEventListener('beforeunload', function() {
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+        }
+        if (captureInterval) {
+            clearInterval(captureInterval);
+        }
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Spacebar to capture
+        if (e.code === 'Space' && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+            e.preventDefault();
+            if (!captureBtn.disabled) {
+                captureImage();
+            }
+        }
+        // Ctrl + T to train
+        if (e.ctrlKey && e.key === 't') {
+            e.preventDefault();
+            trainModel();
+        }
+        // Ctrl + C to clear all
+        if (e.ctrlKey && e.key === 'c') {
+            e.preventDefault();
+            clearAllImages();
+        }
+    });
+</script>
+{% endblock %}

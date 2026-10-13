@@ -1,0 +1,659 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient text-white border-0">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h2 class="display-6 fw-bold mb-2">
+                            <i class="bi bi-pencil-square me-3"></i>Edit Teacher: {{ teacher.name }}
+                        </h2>
+                        <p class="lead mb-0">
+                            <i class="bi bi-person-badge me-2"></i>Teacher ID: {{ teacher.teacher_id }} | 
+                            <i class="bi bi-envelope me-2"></i>{{ teacher.email }}
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <a href="{{ url_for('manage_teachers') }}" class="btn btn-light">
+                            <i class="bi bi-arrow-left me-2"></i>Back to Teachers
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Teacher Form -->
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-lg">
+            <div class="card-header bg-transparent pt-4 pb-0 border-0">
+                <!-- Teacher Profile Summary -->
+                <div class="d-flex align-items-center mb-4 p-3 bg-light rounded-3">
+                    <div class="teacher-avatar bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                        <i class="bi bi-person-badge text-primary fs-1"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-1">{{ teacher.name }}</h4>
+                        <p class="text-muted mb-1">
+                            <i class="bi bi-card-heading me-2"></i>{{ teacher.teacher_id }} | 
+                            <i class="bi bi-building me-2"></i>{{ teacher.department or 'Department not set' }}
+                        </p>
+                        <div>
+                            <span class="badge bg-primary me-2">
+                                <i class="bi bi-book me-1"></i>{{ teacher.subjects_taught|length }} Subjects
+                            </span>
+                            <span class="badge bg-success">
+                                <i class="bi bi-calendar me-1"></i>Joined: {{ teacher.created_at.strftime('%d %b, %Y') }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body px-4 py-4">
+                <form method="POST" action="{{ url_for('edit_teacher', teacher_id=teacher.id) }}" class="needs-validation" novalidate>
+                    <!-- Basic Information Section -->
+                    <h5 class="fw-bold mb-3">
+                        <i class="bi bi-info-circle me-2 text-primary"></i>Basic Information
+                    </h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="name" 
+                                       name="name" 
+                                       value="{{ teacher.name }}"
+                                       placeholder="Enter full name"
+                                       required>
+                                <label for="name">
+                                    <i class="bi bi-person me-2"></i>Full Name <span class="text-danger">*</span>
+                                </label>
+                                <div class="invalid-feedback">
+                                    Please enter teacher's full name.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="teacher_id" 
+                                       value="{{ teacher.teacher_id }}"
+                                       placeholder="Teacher ID"
+                                       disabled
+                                       readonly>
+                                <label for="teacher_id">
+                                    <i class="bi bi-card-heading me-2"></i>Teacher ID (Cannot be changed)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="email" 
+                                       class="form-control" 
+                                       id="email" 
+                                       name="email" 
+                                       value="{{ teacher.email }}"
+                                       placeholder="name@example.com"
+                                       required>
+                                <label for="email">
+                                    <i class="bi bi-envelope me-2"></i>Email Address <span class="text-danger">*</span>
+                                </label>
+                                <div class="invalid-feedback">
+                                    Please enter a valid email address.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="tel" 
+                                       class="form-control" 
+                                       id="phone" 
+                                       name="phone" 
+                                       value="{{ teacher.phone or '' }}"
+                                       placeholder="Enter phone number"
+                                       pattern="[0-9]{10}">
+                                <label for="phone">
+                                    <i class="bi bi-telephone me-2"></i>Phone Number
+                                </label>
+                                <div class="invalid-feedback">
+                                    Please enter a valid 10-digit phone number.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Professional Details Section -->
+                    <h5 class="fw-bold mb-3">
+                        <i class="bi bi-briefcase me-2 text-success"></i>Professional Details
+                    </h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <select class="form-select" id="department" name="department" required>
+                                    <option value="">Select department</option>
+                                    <option value="Computer Science" {% if teacher.department == 'Computer Science' %}selected{% endif %}>Computer Science</option>
+                                    <option value="Information Technology" {% if teacher.department == 'Information Technology' %}selected{% endif %}>Information Technology</option>
+                                    <option value="Electronics" {% if teacher.department == 'Electronics' %}selected{% endif %}>Electronics</option>
+                                    <option value="Electrical" {% if teacher.department == 'Electrical' %}selected{% endif %}>Electrical</option>
+                                    <option value="Mechanical" {% if teacher.department == 'Mechanical' %}selected{% endif %}>Mechanical</option>
+                                    <option value="Civil" {% if teacher.department == 'Civil' %}selected{% endif %}>Civil</option>
+                                    <option value="Mathematics" {% if teacher.department == 'Mathematics' %}selected{% endif %}>Mathematics</option>
+                                    <option value="Physics" {% if teacher.department == 'Physics' %}selected{% endif %}>Physics</option>
+                                    <option value="Chemistry" {% if teacher.department == 'Chemistry' %}selected{% endif %}>Chemistry</option>
+                                    <option value="Biology" {% if teacher.department == 'Biology' %}selected{% endif %}>Biology</option>
+                                    <option value="Commerce" {% if teacher.department == 'Commerce' %}selected{% endif %}>Commerce</option>
+                                    <option value="Arts" {% if teacher.department == 'Arts' %}selected{% endif %}>Arts</option>
+                                </select>
+                                <label for="department">
+                                    <i class="bi bi-building me-2"></i>Department <span class="text-danger">*</span>
+                                </label>
+                                <div class="invalid-feedback">
+                                    Please select a department.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="designation" 
+                                       name="designation" 
+                                       value="{{ teacher.designation or '' }}"
+                                       placeholder="Enter designation">
+                                <label for="designation">
+                                    <i class="bi bi-person-badge me-2"></i>Designation
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="qualification" 
+                                       name="qualification" 
+                                       value="{{ teacher.qualification or '' }}"
+                                       placeholder="Enter qualification">
+                                <label for="qualification">
+                                    <i class="bi bi-mortarboard me-2"></i>Qualification
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="specialization" 
+                                       name="specialization" 
+                                       value="{{ teacher.specialization or '' }}"
+                                       placeholder="Enter specialization">
+                                <label for="specialization">
+                                    <i class="bi bi-star me-2"></i>Specialization
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="experience" 
+                                       name="experience" 
+                                       value="{{ teacher.experience or '0' }}"
+                                       placeholder="Years of experience"
+                                       min="0"
+                                       max="50">
+                                <label for="experience">
+                                    <i class="bi bi-clock-history me-2"></i>Years of Experience
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="date" 
+                                       class="form-control" 
+                                       id="joining_date" 
+                                       name="joining_date" 
+                                       value="{{ teacher.joining_date or teacher.created_at.strftime('%Y-%m-%d') }}">
+                                <label for="joining_date">
+                                    <i class="bi bi-calendar-plus me-2"></i>Joining Date
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Account Settings Section -->
+                    <h5 class="fw-bold mb-3">
+                        <i class="bi bi-shield-lock me-2 text-warning"></i>Account Settings
+                    </h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="username" 
+                                       value="{{ teacher.username }}"
+                                       placeholder="Username"
+                                       disabled
+                                       readonly>
+                                <label for="username">
+                                    <i class="bi bi-at me-2"></i>Username (Cannot be changed)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                <input type="password" 
+                                       class="form-control" 
+                                       id="new_password" 
+                                       name="new_password" 
+                                       placeholder="Leave blank to keep current">
+                                <label for="new_password">
+                                    <i class="bi bi-key me-2"></i>New Password
+                                </label>
+                                <small class="text-muted">Leave blank to keep current password</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="card bg-light border-0">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="account_active" name="account_active" checked>
+                                                <label class="form-check-label" for="account_active">
+                                                    <i class="bi bi-check-circle me-2"></i>Account Active
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="require_password_change" name="require_password_change">
+                                                <label class="form-check-label" for="require_password_change">
+                                                    <i class="bi bi-shield-lock me-2"></i>Require password change on next login
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications" checked>
+                                                <label class="form-check-label" for="email_notifications">
+                                                    <i class="bi bi-envelope me-2"></i>Enable email notifications
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="two_factor" name="two_factor">
+                                                <label class="form-check-label" for="two_factor">
+                                                    <i class="bi bi-shield-check me-2"></i>Enable two-factor authentication
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Subjects Assigned -->
+                    <h5 class="fw-bold mb-3">
+                        <i class="bi bi-book me-2 text-info"></i>Subjects Assigned
+                    </h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="card bg-light border-0">
+                                <div class="card-body">
+                                    {% if teacher.subjects_taught %}
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Subject Name</th>
+                                                        <th>Class</th>
+                                                        <th>Students</th>
+                                                        <th>Created</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for subject in teacher.subjects_taught %}
+                                                        <tr>
+                                                            <td><strong>{{ subject.name }}</strong></td>
+                                                            <td>{{ subject.class_name }}</td>
+                                                            <td>{{ subject.enrollments|length }}</td>
+                                                            <td>{{ subject.created_at.strftime('%d/%m/%Y') }}</td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <p class="text-muted text-center mb-0">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            No subjects assigned to this teacher yet.
+                                        </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between align-items-center border-top pt-4">
+                        <div>
+                            <button type="button" class="btn btn-outline-danger" onclick="deleteTeacher()">
+                                <i class="bi bi-trash me-2"></i>Delete Teacher
+                            </button>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('manage_teachers') }}" class="btn btn-secondary me-2">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success" id="submitBtn">
+                                <i class="bi bi-check-circle me-2"></i>Update Teacher
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Activity Log Card -->
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-transparent pt-3">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item d-flex mb-3">
+                        <div class="timeline-icon bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                            <i class="bi bi-box-arrow-in-right text-primary"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <h6 class="mb-1">Last Login</h6>
+                                <small class="text-muted">Today, 09:30 AM</small>
+                            </div>
+                            <p class="small text-muted mb-0">IP: 192.168.1.100</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item d-flex mb-3">
+                        <div class="timeline-icon bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                            <i class="bi bi-camera text-success"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <h6 class="mb-1">Marked Attendance</h6>
+                                <small class="text-muted">Yesterday, 11:15 AM</small>
+                            </div>
+                            <p class="small text-muted mb-0">Subject: Data Structures, Class: 3rd Year</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item d-flex mb-3">
+                        <div class="timeline-icon bg-warning bg-opacity-10 rounded-circle p-2 me-3">
+                            <i class="bi bi-pencil text-warning"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <h6 class="mb-1">Profile Updated</h6>
+                                <small class="text-muted">3 days ago</small>
+                            </div>
+                            <p class="small text-muted mb-0">Contact information updated</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete teacher: <strong>{{ teacher.name }}</strong>?</p>
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone!
+                </div>
+                <ul class="text-danger small">
+                    <li>Teacher account will be permanently deleted</li>
+                    <li>All subjects taught by this teacher will be affected</li>
+                    <li>Attendance records will be archived</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ url_for('delete_teacher', teacher_id=teacher.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-2"></i>Delete Teacher
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .teacher-avatar {
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .form-floating > .form-control:focus ~ label,
+    .form-floating > .form-control:not(:placeholder-shown) ~ label {
+        color: #667eea;
+        opacity: 1;
+    }
+    
+    .form-floating > .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        transform: translateY(-2px);
+        transition: all 0.3s ease;
+    }
+    
+    .form-floating > .form-control:disabled {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+        color: #6c757d;
+    }
+    
+    .form-check-input:checked {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+    
+    .form-check-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .timeline {
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+    
+    .timeline::-webkit-scrollbar {
+        width: 5px;
+    }
+    
+    .timeline::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .timeline::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 10px;
+    }
+    
+    .timeline-item {
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .timeline-item:hover {
+        background: white;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        transform: translateX(5px);
+    }
+    
+    .timeline-icon {
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn {
+        transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .table-sm th {
+        color: #666;
+        font-weight: 500;
+    }
+    
+    @media (max-width: 768px) {
+        .display-6 {
+            font-size: 1.5rem;
+        }
+        
+        .teacher-avatar {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .teacher-avatar i {
+            font-size: 2rem !important;
+        }
+    }
+</style>
+
+<!-- JavaScript -->
+<script>
+    function deleteTeacher() {
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+    
+    // Form validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            });
+        });
+        
+        // Phone number validation
+        document.getElementById('phone').addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            if (this.value.length > 10) {
+                this.value = this.value.slice(0, 10);
+            }
+        });
+        
+        // Experience validation
+        document.getElementById('experience').addEventListener('input', function(e) {
+            if (this.value < 0) this.value = 0;
+            if (this.value > 50) this.value = 50;
+        });
+        
+        // Confirm before submit
+        document.getElementById('submitBtn').addEventListener('click', function(e) {
+            if (!confirm('Are you sure you want to update this teacher\'s information?')) {
+                e.preventDefault();
+            }
+        });
+        
+        // Password strength indicator (if password is being changed)
+        document.getElementById('new_password').addEventListener('input', function(e) {
+            const password = e.target.value;
+            if (password.length > 0) {
+                let strength = 0;
+                if (password.length >= 6) strength += 25;
+                if (password.match(/[a-z]+/)) strength += 25;
+                if (password.match(/[A-Z]+/)) strength += 25;
+                if (password.match(/[0-9]+/)) strength += 25;
+                
+                // Show strength indicator
+                let message = '';
+                if (strength <= 25) message = 'Weak password';
+                else if (strength <= 50) message = 'Fair password';
+                else if (strength <= 75) message = 'Good password';
+                else message = 'Strong password';
+                
+                // Create or update indicator
+                let indicator = document.getElementById('password-strength');
+                if (!indicator) {
+                    indicator = document.createElement('small');
+                    indicator.id = 'password-strength';
+                    indicator.className = 'form-text';
+                    e.target.parentElement.appendChild(indicator);
+                }
+                indicator.textContent = message;
+                indicator.className = strength <= 25 ? 'form-text text-danger' :
+                                     strength <= 50 ? 'form-text text-warning' :
+                                     strength <= 75 ? 'form-text text-info' :
+                                     'form-text text-success';
+            }
+        });
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl + Enter to submit
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('submitBtn').click();
+        }
+        // Ctrl + D to delete
+        if (e.ctrlKey && e.key === 'd') {
+            e.preventDefault();
+            deleteTeacher();
+        }
+    });
+</script>
+{% endblock %}

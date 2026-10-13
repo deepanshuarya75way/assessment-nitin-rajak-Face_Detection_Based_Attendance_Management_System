@@ -1,0 +1,558 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient text-white border-0">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h2 class="display-6 fw-bold mb-2">
+                            <i class="bi bi-grid-3x3 me-3"></i>Attendance Matrix: {{ subject.name }}
+                        </h2>
+                        <p class="lead mb-0">
+                            <i class="bi bi-building me-2"></i>{{ subject.class_name }} | 
+                            <i class="bi bi-people me-2"></i>{{ students|length }} Students |
+                            <i class="bi bi-calendar me-2"></i>{{ month }}/{{ year }}
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <a href="{{ url_for('matrix_view') }}" class="btn btn-light me-2">
+                            <i class="bi bi-arrow-left me-2"></i>Back
+                        </a>
+                        <button class="btn btn-light" onclick="exportMatrixToExcel()">
+                            <i class="bi bi-file-excel me-2"></i>Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Matrix Controls -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Change Month/Year</label>
+                        <div class="d-flex gap-2">
+                            <select class="form-select" id="monthSelect">
+                                <option value="1" {% if month == '1' %}selected{% endif %}>January</option>
+                                <option value="2" {% if month == '2' %}selected{% endif %}>February</option>
+                                <option value="3" {% if month == '3' %}selected{% endif %}>March</option>
+                                <option value="4" {% if month == '4' %}selected{% endif %}>April</option>
+                                <option value="5" {% if month == '5' %}selected{% endif %}>May</option>
+                                <option value="6" {% if month == '6' %}selected{% endif %}>June</option>
+                                <option value="7" {% if month == '7' %}selected{% endif %}>July</option>
+                                <option value="8" {% if month == '8' %}selected{% endif %}>August</option>
+                                <option value="9" {% if month == '9' %}selected{% endif %}>September</option>
+                                <option value="10" {% if month == '10' %}selected{% endif %}>October</option>
+                                <option value="11" {% if month == '11' %}selected{% endif %}>November</option>
+                                <option value="12" {% if month == '12' %}selected{% endif %}>December</option>
+                            </select>
+                            <select class="form-select" id="yearSelect" style="width: 100px;">
+                                <option value="{{ year }}" selected>{{ year }}</option>
+                                <option value="{{ year - 1 }}">{{ year - 1 }}</option>
+                                <option value="{{ year + 1 }}">{{ year + 1 }}</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="changeMonthYear()">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Quick Filters</label>
+                        <div class="btn-group w-100">
+                            <button class="btn btn-outline-success" onclick="highlightPresent()">
+                                <i class="bi bi-check-circle me-1"></i>Present
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="highlightAbsent()">
+                                <i class="bi bi-x-circle me-1"></i>Absent
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="clearHighlights()">
+                                <i class="bi bi-eraser me-1"></i>Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Summary</label>
+                        <div class="d-flex gap-3">
+                            <div>
+                                <small class="text-muted d-block">Total Days</small>
+                                <span class="fw-bold">{{ dates|length }}</span>
+                            </div>
+                            <div>
+                                <small class="text-muted d-block">Total Periods</small>
+                                <span class="fw-bold">{{ periods|length }}</span>
+                            </div>
+                            <div>
+                                <small class="text-muted d-block">Total Records</small>
+                                <span class="fw-bold">{{ matrix|length }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Matrix Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="matrix-container">
+                    <table class="matrix-table" id="matrixTable">
+                        <thead>
+                            <tr>
+                                <th class="student-info-header">Student Name (Roll No)</th>
+                                {% for date in dates %}
+                                    <th colspan="{{ periods|length }}" class="date-header">
+                                        {{ date.strftime('%d %b, %Y') }}
+                                        <small class="d-block text-white-50">{{ date.strftime('%A') }}</small>
+                                    </th>
+                                {% endfor %}
+                                <th class="summary-header">Summary</th>
+                            </tr>
+                            <tr class="period-row">
+                                <th class="student-info-header"></th>
+                                {% for date in dates %}
+                                    {% for period in periods %}
+                                        <th class="period-header">P{{ period }}</th>
+                                    {% endfor %}
+                                {% endfor %}
+                                <th class="summary-header">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                                <tr class="student-row" data-student-id="{{ student.id }}">
+                                    <td class="student-info">
+                                        <div class="d-flex align-items-center">
+                                            <div class="student-avatar bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                                <i class="bi bi-person-circle text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ student.name }}</strong>
+                                                <small class="text-muted d-block">{{ student.roll_number }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    
+                                    {% for date in dates %}
+                                        {% for period in periods %}
+                                            {% set key = student.id ~ '_' ~ date.strftime('%Y-%m-%d') ~ '_' ~ period %}
+                                            <td class="matrix-cell {% if matrix[key] == 'present' %}present-cell{% elif matrix[key] == 'absent' %}absent-cell{% endif %}">
+                                                {% if matrix[key] %}
+                                                    {% if matrix[key] == 'present' %}
+                                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                                        <span class="status-text">P</span>
+                                                    {% else %}
+                                                        <i class="bi bi-x-circle-fill text-danger"></i>
+                                                        <span class="status-text">A</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                    {% endfor %}
+                                    
+                                    {% set total_present = 0 %}
+                                    {% set total_classes = 0 %}
+                                    {% for date in dates %}
+                                        {% for period in periods %}
+                                            {% set key = student.id ~ '_' ~ date.strftime('%Y-%m-%d') ~ '_' ~ period %}
+                                            {% if matrix[key] %}
+                                                {% set total_classes = total_classes + 1 %}
+                                                {% if matrix[key] == 'present' %}
+                                                    {% set total_present = total_present + 1 %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                    {% set percentage = (total_present / total_classes * 100) if total_classes > 0 else 0 %}
+                                    
+                                    <td class="summary-cell {% if percentage >= 75 %}bg-success{% elif percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %} text-white">
+                                        <strong>{{ '%.1f'|format(percentage) }}%</strong>
+                                        <small class="d-block">{{ total_present }}/{{ total_classes }}</small>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Matrix Legend -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-4 align-items-center">
+                    <span class="fw-bold me-3">Legend:</span>
+                    <div class="d-flex align-items-center">
+                        <div class="legend-box present-cell me-2"></div>
+                        <span>Present</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="legend-box absent-cell me-2"></div>
+                        <span>Absent</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="legend-box bg-light border me-2"></div>
+                        <span>No Class</span>
+                    </div>
+                    <div class="ms-auto">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Hover over cells to see details
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .matrix-container {
+        overflow-x: auto;
+        max-height: 600px;
+        overflow-y: auto;
+        position: relative;
+        border-radius: 15px;
+    }
+    
+    .matrix-table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.9rem;
+        min-width: 1200px;
+    }
+    
+    .matrix-table th {
+        position: sticky;
+        top: 0;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 12px;
+        text-align: center;
+        font-weight: 600;
+        z-index: 20;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .matrix-table .period-row th {
+        top: 70px;
+        background: linear-gradient(135deg, #764ba2, #667eea);
+        padding: 8px;
+        font-size: 0.85rem;
+    }
+    
+    .student-info-header {
+        position: sticky !important;
+        left: 0;
+        z-index: 30 !important;
+        min-width: 250px;
+    }
+    
+    .student-info {
+        position: sticky;
+        left: 0;
+        background: white;
+        z-index: 10;
+        border-right: 2px solid #dee2e6;
+        padding: 10px;
+        min-width: 250px;
+    }
+    
+    .date-header {
+        min-width: 100px;
+    }
+    
+    .period-header {
+        min-width: 60px;
+        font-size: 0.8rem;
+    }
+    
+    .summary-header {
+        min-width: 80px;
+        background: linear-gradient(135deg, #28a745, #20c997) !important;
+    }
+    
+    .matrix-cell {
+        text-align: center;
+        padding: 8px;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .matrix-cell:hover {
+        transform: scale(1.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 5;
+        position: relative;
+    }
+    
+    .present-cell {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        color: #155724;
+    }
+    
+    .absent-cell {
+        background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+        color: #721c24;
+    }
+    
+    .summary-cell {
+        text-align: center;
+        padding: 10px;
+        font-weight: bold;
+        position: sticky;
+        right: 0;
+        background: white;
+        border-left: 2px solid #dee2e6;
+        min-width: 100px;
+    }
+    
+    .student-row:hover .student-info {
+        background: #f8f9fa;
+    }
+    
+    .student-row:hover td:not(.summary-cell) {
+        background: #f8f9fa;
+    }
+    
+    .student-avatar {
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .legend-box {
+        width: 25px;
+        height: 25px;
+        border-radius: 5px;
+    }
+    
+    .status-text {
+        display: none;
+    }
+    
+    /* Tooltip */
+    .matrix-cell {
+        position: relative;
+    }
+    
+    .matrix-cell:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        z-index: 1000;
+    }
+    
+    /* Scrollbar styling */
+    .matrix-container::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    .matrix-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .matrix-container::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 10px;
+    }
+    
+    @media (max-width: 768px) {
+        .display-6 {
+            font-size: 1.5rem;
+        }
+        
+        .student-info {
+            min-width: 200px;
+        }
+        
+        .matrix-cell {
+            padding: 4px;
+        }
+        
+        .matrix-cell i {
+            font-size: 0.8rem;
+        }
+    }
+</style>
+
+<!-- JavaScript -->
+<script>
+    // Change month/year
+    function changeMonthYear() {
+        const month = document.getElementById('monthSelect').value;
+        const year = document.getElementById('yearSelect').value;
+        const subjectId = {{ subject.id }};
+        
+        window.location.href = `/teacher/matrix-data?subject_id=${subjectId}&month=${month}&year=${year}`;
+    }
+    
+    // Highlight present cells
+    function highlightPresent() {
+        const cells = document.querySelectorAll('.matrix-cell');
+        cells.forEach(cell => {
+            if (cell.classList.contains('present-cell')) {
+                cell.style.transform = 'scale(1.05)';
+                cell.style.boxShadow = '0 0 15px #28a745';
+            }
+        });
+        
+        setTimeout(() => {
+            cells.forEach(cell => {
+                cell.style.transform = '';
+                cell.style.boxShadow = '';
+            });
+        }, 2000);
+    }
+    
+    // Highlight absent cells
+    function highlightAbsent() {
+        const cells = document.querySelectorAll('.matrix-cell');
+        cells.forEach(cell => {
+            if (cell.classList.contains('absent-cell')) {
+                cell.style.transform = 'scale(1.05)';
+                cell.style.boxShadow = '0 0 15px #dc3545';
+            }
+        });
+        
+        setTimeout(() => {
+            cells.forEach(cell => {
+                cell.style.transform = '';
+                cell.style.boxShadow = '';
+            });
+        }, 2000);
+    }
+    
+    // Clear highlights
+    function clearHighlights() {
+        const cells = document.querySelectorAll('.matrix-cell');
+        cells.forEach(cell => {
+            cell.style.transform = '';
+            cell.style.boxShadow = '';
+        });
+    }
+    
+    // Add tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        const cells = document.querySelectorAll('.matrix-cell');
+        cells.forEach(cell => {
+            if (cell.classList.contains('present-cell')) {
+                cell.setAttribute('data-tooltip', 'Present');
+            } else if (cell.classList.contains('absent-cell')) {
+                cell.setAttribute('data-tooltip', 'Absent');
+            } else {
+                cell.setAttribute('data-tooltip', 'No Class');
+            }
+        });
+    });
+    
+    // Export to Excel
+    function exportMatrixToExcel() {
+        const table = document.getElementById('matrixTable');
+        const wb = XLSX.utils.table_to_book(table, { sheet: "Attendance Matrix" });
+        XLSX.writeFile(wb, `attendance_matrix_{{ subject.name }}_{{ month }}_{{ year }}.xlsx`);
+    }
+    
+    // Print matrix
+    function printMatrix() {
+        window.print();
+    }
+    
+    // Search within matrix
+    function searchMatrix() {
+        const searchTerm = prompt('Enter student name or roll number to search:');
+        if (!searchTerm) return;
+        
+        const rows = document.querySelectorAll('.student-row');
+        rows.forEach(row => {
+            const studentInfo = row.querySelector('.student-info').textContent.toLowerCase();
+            if (studentInfo.includes(searchTerm.toLowerCase())) {
+                row.style.backgroundColor = '#fff3cd';
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl + F to search
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            searchMatrix();
+        }
+        // Ctrl + P to print
+        if (e.ctrlKey && e.key === 'p') {
+            e.preventDefault();
+            printMatrix();
+        }
+        // Ctrl + E to export
+        if (e.ctrlKey && e.key === 'e') {
+            e.preventDefault();
+            exportMatrixToExcel();
+        }
+        // 1 key to highlight present
+        if (e.key === '1' && !e.ctrlKey) {
+            highlightPresent();
+        }
+        // 2 key to highlight absent
+        if (e.key === '2' && !e.ctrlKey) {
+            highlightAbsent();
+        }
+        // 0 key to clear
+        if (e.key === '0' && !e.ctrlKey) {
+            clearHighlights();
+        }
+    });
+    
+    // Freeze first column and header on scroll
+    window.addEventListener('scroll', function() {
+        const matrixContainer = document.querySelector('.matrix-container');
+        const studentInfo = document.querySelectorAll('.student-info');
+        const headers = document.querySelectorAll('.matrix-table th');
+        
+        if (matrixContainer.scrollLeft > 0) {
+            studentInfo.forEach(el => el.style.transform = `translateX(${matrixContainer.scrollLeft}px)`);
+        } else {
+            studentInfo.forEach(el => el.style.transform = 'translateX(0)');
+        }
+    });
+</script>
+
+<!-- Load SheetJS for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+{% endblock %}

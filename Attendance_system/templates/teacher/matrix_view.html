@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient text-white border-0">
+            <div class="card-body p-4">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h2 class="display-6 fw-bold mb-2">
+                            <i class="bi bi-grid-3x3 me-3"></i>Attendance Matrix View
+                        </h2>
+                        <p class="lead mb-0">
+                            <i class="bi bi-table me-2"></i>View attendance as Date vs Period matrix for each subject
+                        </p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <img src="https://img.freepik.com/free-vector/matrix-concept-illustration_114360-3669.jpg" 
+                             alt="Matrix Illustration" 
+                             class="img-fluid" 
+                             style="max-height: 120px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Subject Selection -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-book me-2"></i>Select Subject</h5>
+                <span class="badge bg-primary">{{ subjects|length }} Subjects</span>
+            </div>
+            <div class="card-body">
+                {% if subjects %}
+                    <div class="row g-4">
+                        {% for subject in subjects %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card subject-card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="subject-icon bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                                                <i class="bi bi-journal-bookmark-fill text-primary fs-4"></i>
+                                            </div>
+                                            <div>
+                                                <h5 class="fw-bold mb-1">{{ subject.name }}</h5>
+                                                <p class="text-muted small mb-0">
+                                                    <i class="bi bi-building me-1"></i>{{ subject.class_name }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="subject-stats mb-3">
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-people me-1"></i>Students
+                                                </small>
+                                                <span class="fw-bold">{{ subject.enrollments|length }}</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-calendar me-1"></i>Total Classes
+                                                </small>
+                                                <span class="fw-bold">{{ subject.attendances|length }}</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-percent me-1"></i>Avg Attendance
+                                                </small>
+                                                {% set total_present = subject.attendances|selectattr('status', 'equalto', 'present')|list|length %}
+                                                {% set total_classes = subject.attendances|length %}
+                                                {% set avg_percentage = (total_present / total_classes * 100) if total_classes > 0 else 0 %}
+                                                <span class="fw-bold {% if avg_percentage >= 75 %}text-success{% elif avg_percentage >= 60 %}text-warning{% else %}text-danger{% endif %}">
+                                                    {{ '%.1f'|format(avg_percentage) }}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Month Selection -->
+                                        <div class="month-selector mb-3">
+                                            <label class="form-label small text-muted">Select Month</label>
+                                            <select class="form-select form-select-sm" id="month-{{ subject.id }}">
+                                                <option value="1" {% if now().month == 1 %}selected{% endif %}>January</option>
+                                                <option value="2" {% if now().month == 2 %}selected{% endif %}>February</option>
+                                                <option value="3" {% if now().month == 3 %}selected{% endif %}>March</option>
+                                                <option value="4" {% if now().month == 4 %}selected{% endif %}>April</option>
+                                                <option value="5" {% if now().month == 5 %}selected{% endif %}>May</option>
+                                                <option value="6" {% if now().month == 6 %}selected{% endif %}>June</option>
+                                                <option value="7" {% if now().month == 7 %}selected{% endif %}>July</option>
+                                                <option value="8" {% if now().month == 8 %}selected{% endif %}>August</option>
+                                                <option value="9" {% if now().month == 9 %}selected{% endif %}>September</option>
+                                                <option value="10" {% if now().month == 10 %}selected{% endif %}>October</option>
+                                                <option value="11" {% if now().month == 11 %}selected{% endif %}>November</option>
+                                                <option value="12" {% if now().month == 12 %}selected{% endif %}>December</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Year Selection -->
+                                        <div class="year-selector mb-3">
+                                            <label class="form-label small text-muted">Select Year</label>
+                                            <select class="form-select form-select-sm" id="year-{{ subject.id }}">
+                                                <option value="{{ now().year }}" selected>{{ now().year }}</option>
+                                                <option value="{{ now().year - 1 }}">{{ now().year - 1 }}</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="d-grid">
+                                            <button class="btn btn-primary" onclick="viewMatrix({{ subject.id }})">
+                                                <i class="bi bi-table me-2"></i>View Matrix
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <img src="https://img.freepik.com/free-vector/no-data-concept-illustration_114360-2506.jpg" 
+                             alt="No Subjects" 
+                             class="img-fluid mb-3" 
+                             style="max-height: 150px;">
+                        <h6 class="text-muted">No subjects found</h6>
+                        <p class="small text-muted mb-3">You haven't created any subjects yet</p>
+                        <a href="{{ url_for('manage_subjects') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Add Subject
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Matrix Preview Section -->
+{% if subjects %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>About Matrix View</h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h6 class="fw-bold mb-3">What is Attendance Matrix?</h6>
+                        <p class="text-muted small">The attendance matrix shows attendance records in a tabular format where:</p>
+                        <ul class="text-muted small">
+                            <li><i class="bi bi-arrow-right-circle text-primary me-2"></i><strong>Rows</strong> represent different dates</li>
+                            <li><i class="bi bi-arrow-right-circle text-primary me-2"></i><strong>Columns</strong> represent different periods (1-6)</li>
+                            <li><i class="bi bi-arrow-right-circle text-primary me-2"></i>Each cell shows <span class="badge bg-success">Present</span> or <span class="badge bg-danger">Absent</span></li>
+                            <li><i class="bi bi-arrow-right-circle text-primary me-2"></i>Empty cells mean no class on that date/period</li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="matrix-preview bg-light p-3 rounded-3">
+                            <h6 class="text-center mb-2">Sample Matrix</h6>
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>P1</th>
+                                        <th>P2</th>
+                                        <th>P3</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>10 Feb</td>
+                                        <td class="bg-success text-white">P</td>
+                                        <td class="bg-danger text-white">A</td>
+                                        <td class="bg-success text-white">P</td>
+                                    </tr>
+                                    <tr>
+                                        <td>11 Feb</td>
+                                        <td class="bg-success text-white">P</td>
+                                        <td class="bg-success text-white">P</td>
+                                        <td class="bg-danger text-white">A</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats by Subject -->
+<div class="row mt-4 g-4">
+    {% for subject in subjects[:3] %}
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-0 pt-3">
+                <h6 class="fw-bold mb-0">{{ subject.name }}</h6>
+                <small class="text-muted">{{ subject.class_name }}</small>
+            </div>
+            <div class="card-body">
+                {% set total_present = subject.attendances|selectattr('status', 'equalto', 'present')|list|length %}
+                {% set total_classes = subject.attendances|length %}
+                {% set avg_percentage = (total_present / total_classes * 100) if total_classes > 0 else 0 %}
+                
+                <div class="d-flex justify-content-between mb-2">
+                    <small>Attendance Rate</small>
+                    <span class="fw-bold {% if avg_percentage >= 75 %}text-success{% elif avg_percentage >= 60 %}text-warning{% else %}text-danger{% endif %}">
+                        {{ '%.1f'|format(avg_percentage) }}%
+                    </span>
+                </div>
+                <div class="progress mb-3" style="height: 8px;">
+                    <div class="progress-bar {% if avg_percentage >= 75 %}bg-success{% elif avg_percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                         role="progressbar" 
+                         style="width: {{ avg_percentage }}%;"
+                         aria-valuenow="{{ avg_percentage }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <small class="text-muted">
+                        <i class="bi bi-check-circle text-success me-1"></i>{{ total_present }} Present
+                    </small>
+                    <small class="text-muted">
+                        <i class="bi bi-x-circle text-danger me-1"></i>{{ total_classes - total_present }} Absent
+                    </small>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0 pb-3">
+                <button class="btn btn-sm btn-outline-primary w-100" onclick="viewMatrix({{ subject.id }})">
+                    <i class="bi bi-table me-2"></i>View Full Matrix
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Custom Styles -->
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .subject-card {
+        transition: all 0.3s ease;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    
+    .subject-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(102, 126, 234, 0.2) !important;
+    }
+    
+    .subject-icon {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .subject-stats {
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 10px;
+    }
+    
+    .matrix-preview {
+        border: 1px solid #dee2e6;
+    }
+    
+    .matrix-preview table {
+        font-size: 0.8rem;
+    }
+    
+    .matrix-preview td {
+        text-align: center;
+        padding: 5px;
+    }
+    
+    .form-select-sm {
+        font-size: 0.85rem;
+        padding: 0.4rem 1.5rem 0.4rem 0.75rem;
+    }
+    
+    .btn-outline-primary {
+        transition: all 0.3s ease;
+    }
+    
+    .btn-outline-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    @media (max-width: 768px) {
+        .display-6 {
+            font-size: 1.5rem;
+        }
+        
+        .subject-icon {
+            width: 50px;
+            height: 50px;
+        }
+        
+        .subject-icon i {
+            font-size: 1.5rem !important;
+        }
+        
+        .matrix-preview {
+            margin-top: 20px;
+        }
+    }
+</style>
+
+<!-- JavaScript -->
+<script>
+    // View matrix for selected subject
+    function viewMatrix(subjectId) {
+        const monthSelect = document.getElementById(`month-${subjectId}`);
+        const yearSelect = document.getElementById(`year-${subjectId}`);
+        
+        const month = monthSelect ? monthSelect.value : new Date().getMonth() + 1;
+        const year = yearSelect ? yearSelect.value : new Date().getFullYear();
+        
+        // Show loading state on the button
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Loading...';
+        button.disabled = true;
+        
+        // Navigate to matrix data page
+        window.location.href = `/teacher/matrix-data?subject_id=${subjectId}&month=${month}&year=${year}`;
+    }
+    
+    // Quick filter subjects
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.className = 'form-control mb-3';
+        searchInput.placeholder = 'Search subjects...';
+        searchInput.style.maxWidth = '300px';
+        
+        const header = document.querySelector('.card-header');
+        if (header) {
+            header.appendChild(searchInput);
+            
+            searchInput.addEventListener('keyup', function() {
+                const searchTerm = this.value.toLowerCase();
+                const cards = document.querySelectorAll('.subject-card');
+                
+                cards.forEach(function(card) {
+                    const subjectName = card.querySelector('h5').textContent.toLowerCase();
+                    const className = card.querySelector('.text-muted small').textContent.toLowerCase();
+                    
+                    if (subjectName.includes(searchTerm) || className.includes(searchTerm)) {
+                        card.closest('.col-md-6').style.display = '';
+                    } else {
+                        card.closest('.col-md-6').style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl + F for focus search
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            const searchInput = document.querySelector('input[placeholder="Search subjects..."]');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }
+    });
+    
+    // Remember last selected month/year (optional)
+    function saveSelection(subjectId, month, year) {
+        localStorage.setItem(`matrix_month_${subjectId}`, month);
+        localStorage.setItem(`matrix_year_${subjectId}`, year);
+    }
+    
+    function loadSelection(subjectId) {
+        const month = localStorage.getItem(`matrix_month_${subjectId}`);
+        const year = localStorage.getItem(`matrix_year_${subjectId}`);
+        
+        if (month) {
+            const monthSelect = document.getElementById(`month-${subjectId}`);
+            if (monthSelect) monthSelect.value = month;
+        }
+        
+        if (year) {
+            const yearSelect = document.getElementById(`year-${subjectId}`);
+            if (yearSelect) yearSelect.value = year;
+        }
+    }
+    
+    // Load saved selections on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for subject in subjects %}
+            loadSelection({{ subject.id }});
+        {% endfor %}
+    });
+</script>
+{% endblock %}
