@@ -1,0 +1,9 @@
+cat > .gitignore << 'EOF'
+Attendance_system/venv/
+Attendance_system/__pycache__/
+Attendance_system/**/*.pyc
+Attendance_system/instance/attendance.db
+Attendance_system/dataset/
+Attendance_system/trained_model.pkl
+Attendance_system/static/uploads/
+EOF
