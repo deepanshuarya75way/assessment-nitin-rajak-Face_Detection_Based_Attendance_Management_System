@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import os
 from datetime import datetime, date
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, Response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 from models import db, User, Subject, StudentSubject, Attendance
@@ -958,6 +958,854 @@ def utility_processor():
     def now():
         return datetime.now()
     return dict(now=now)
+
+# ==================== ANTI-PROXY VIDEO STREAM & BIOMETRICS ====================
+
+def gen_frames():
+    """Generates live webcam frames for the frontend interface stream."""
+    camera = cv2.VideoCapture(0)  # Use 0 for local system webcam
+    if not camera.isOpened():
+        print("Error: Could not open video device.")
+        return
+        
+    # Load OpenCV's face cascading classifier map
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    
+    while True:
+        success, frame = camera.read()
+        if not success:
+            break
+        else:
+            # Subtle visual aid overlay bounding boxes directly on server stream
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+            for (x, y, w, h) in faces:
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+                
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame_bytes = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+    camera.release()
+
+@app.route('/teacher/marked_attendance_photo')
+@login_required
+@teacher_required
+def marked_attendance_photo():
+    """Renders the anti-proxy scanning page with instructor details."""
+    subjects = Subject.query.filter_by(teacher_id=current_user.id).all()
+    # Read scanned students session data if redirected back from verification
+    scanned_students = session.get('scanned_students', [])
+    return render_template('teacher/marked_attendance_photo.html', 
+                           subjects=subjects, 
+                           scanned_students=scanned_students)
+
+@app.route('/video_feed')
+@login_required
+def video_feed():
+    """Returns the live stream feed parsed by OpenCV processing."""
+    return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/capture_attendance', methods=['POST'])
+@login_required
+@teacher_required
+def capture_attendance():
+    """Captures single camera frame, checks face biometrics, logs verified attendance."""
+    subject_id = request.form.get('subject_id')
+    if not subject_id:
+        flash('Please select a course subject first!', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+
+    camera = cv2.VideoCapture(0)
+    success, frame = camera.read()
+    camera.release()
+
+    if not success:
+        flash('Hardware streaming capture failed. Check camera connection.', 'danger')
+        return redirect(url_for('marked_attendance_photo'))
+
+    # Save snapshot for review window
+    latest_path = os.path.join(app.config['UPLOAD_FOLDER'], 'latest_capture.jpg')
+    cv2.imwrite(latest_path, frame)
+
+    # Prepare Image Processing
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+
+    if len(faces) == 0:
+        flash('No human faces identified within the framework box. Verification aborted.', 'danger')
+        session['scanned_students'] = []
+        return redirect(url_for('marked_attendance_photo'))
+
+    # Initialize LBPH Face Recognizer engine
+    recognizer = cv2.face.LBPHFaceRecognizer_create()
+    trainer_path = os.path.join(app.config['DATASET_FOLDER'], 'trainer.yml')
+    
+    if not os.path.exists(trainer_path):
+        flash('Biometric dataset model file (trainer.yml) missing. Train your dataset first.', 'danger')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    recognizer.read(trainer_path)
+    verified_list = []
+
+    for (x, y, w, h) in faces:
+        # Match slice area against database
+        student_id, loss_distance = recognizer.predict(gray[y:y+h, x:x+w])
+        
+        # Lower loss distance / confidence metric value represents a closer matching precision
+        if loss_distance < 65:  
+            student = User.query.filter_by(id=student_id, role='student').first()
+            if student:
+                # Deduplicate entries to block multiple frame proxy logging loops
+                existing_log = Attendance.query.filter_by(
+                    subject_id=subject_id, 
+                    student_id=student.id, 
+                    date=date.today()
+                ).first()
+                
+                if not existing_log:
+                    attendance_log = Attendance(
+                        subject_id=subject_id,
+                        student_id=student.id,
+                        date=date.today(),
+                        status='Present'
+                    )
+                    db.session.add(attendance_log)
+                    verified_list.append({
+                        'name': student.name,
+                        'roll_number': student.roll_number
+                    })
+    
+    db.session.commit()
+    session['scanned_students'] = verified_list
+    
+    if verified_list:
+        flash(f"Successfully verified and logged {len(verified_list)} student(s) without proxy discrepancies!", "success")
+    else:
+        flash("Faces found but authentication confidence scores failed verification boundaries.", "warning")
+        
+    return redirect(url_for('marked_attendance_photo'))
+# ==================== CLASSROOM PHOTO UPLOAD PROCESSING ====================
+
+@app.route('/upload_attendance_photo', methods=['POST'])
+@login_required
+@teacher_required
+def upload_attendance_photo():
+    """Handles an uploaded classroom image frame and processes it via face biometrics."""
+    subject_id = request.form.get('subject_id')
+    if not subject_id:
+        flash('Please select a course subject first!', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if 'classroom_photo' not in request.files:
+        flash('No file part detected in request form payload.', 'danger')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    file = request.files['classroom_photo']
+    if file.filename == '':
+        flash('No image file selected for upload processing.', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if file:
+        # Secure the file path name
+        filename = secure_filename(file.filename)
+        # Rename securely to keep uniformity for frontend rendering preview window
+        latest_path = os.path.join(app.config['UPLOAD_FOLDER'], 'latest_capture.jpg')
+        file.save(latest_path)
+        
+        # Read file image stream via OpenCV array decoding
+        frame = cv2.imread(latest_path)
+        if frame is None:
+            flash('Failed to read or parse uploaded image structure.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Prepare Image Processing
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        faces = face_cascade.detectMultiScale(gray, 1.1, 6, minSize=(30, 30))
+        
+        if len(faces) == 0:
+            flash('No human faces identified within the uploaded picture profile.', 'danger')
+            session['scanned_students'] = []
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Initialize LBPH Face Recognizer engine
+        recognizer = cv2.face.LBPHFaceRecognizer_create()
+        trainer_path = os.path.join(app.config['DATASET_FOLDER'], 'trainer.yml')
+        
+        if not os.path.exists(trainer_path):
+            flash('Biometric model data missing. Please compile training sets first.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        recognizer.read(trainer_path)
+        verified_list = []
+        
+        for (x, y, w, h) in faces:
+            student_id, loss_distance = recognizer.predict(gray[y:y+h, x:x+w])
+            
+            # Match boundary validation check score
+            if loss_distance < 65:  
+                student = User.query.filter_by(id=student_id, role='student').first()
+                if student:
+                    existing_log = Attendance.query.filter_by(
+                        subject_id=subject_id, 
+                        student_id=student.id, 
+                        date=date.today()
+                    ).first()
+                    
+                    if not existing_log:
+                        attendance_log = Attendance(
+                            subject_id=subject_id,
+                            student_id=student.id,
+                            date=date.today(),
+                            status='Present'
+                        )
+                        db.session.add(attendance_log)
+                        verified_list.append({
+                            'name': student.name,
+                            'roll_number': student.roll_number
+                        })
+                        
+        db.session.commit()
+        session['scanned_students'] = verified_list
+        
+        if verified_list:
+            flash(f"Successfully uploaded photo and verified {len(verified_list)} student(s)!", "success")
+        else:
+            flash("Faces detected but failed profile matching validation confidence scores.", "warning")
+            
+        return redirect(url_for('marked_attendance_photo'))
+# ==================== CLASSROOM PHOTO UPLOAD PROCESSING ====================
+
+@app.route('/upload_attendance_photo', methods=['POST'])
+@login_required
+@teacher_required
+def upload_attendance_photo():
+    """Handles an uploaded classroom image frame and processes it via face biometrics."""
+    subject_id = request.form.get('subject_id')
+    if not subject_id:
+        flash('Please select a course subject first!', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if 'classroom_photo' not in request.files:
+        flash('No file part detected in request form payload.', 'danger')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    file = request.files['classroom_photo']
+    if file.filename == '':
+        flash('No image file selected for upload processing.', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if file:
+        # Secure the file path name
+        filename = secure_filename(file.filename)
+        # Rename securely to keep uniformity for frontend rendering preview window
+        latest_path = os.path.join(app.config['UPLOAD_FOLDER'], 'latest_capture.jpg')
+        file.save(latest_path)
+        
+        # Read file image stream via OpenCV array decoding
+        frame = cv2.imread(latest_path)
+        if frame is None:
+            flash('Failed to read or parse uploaded image structure.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Prepare Image Processing
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        faces = face_cascade.detectMultiScale(gray, 1.1, 6, minSize=(30, 30))
+        
+        if len(faces) == 0:
+            flash('No human faces identified within the uploaded picture profile.', 'danger')
+            session['scanned_students'] = []
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Initialize LBPH Face Recognizer engine
+        recognizer = cv2.face.LBPHFaceRecognizer_create()
+        trainer_path = os.path.join(app.config['DATASET_FOLDER'], 'trainer.yml')
+        
+        if not os.path.exists(trainer_path):
+            flash('Biometric model data missing. Please compile training sets first.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        recognizer.read(trainer_path)
+        verified_list = []
+        
+        for (x, y, w, h) in faces:
+            student_id, loss_distance = recognizer.predict(gray[y:y+h, x:x+w])
+            
+            # Match boundary validation check score
+            if loss_distance < 65:  
+                student = User.query.filter_by(id=student_id, role='student').first()
+                if student:
+                    existing_log = Attendance.query.filter_by(
+                        subject_id=subject_id, 
+                        student_id=student.id, 
+                        date=date.today()
+                    ).first()
+                    
+                    if not existing_log:
+                        attendance_log = Attendance(
+                            subject_id=subject_id,
+                            student_id=student.id,
+                            date=date.today(),
+                            status='Present'
+                        )
+                        db.session.add(attendance_log)
+                        verified_list.append({
+                            'name': student.name,
+                            'roll_number': student.roll_number
+                        })
+                        
+        db.session.commit()
+        session['scanned_students'] = verified_list
+        
+        if verified_list:
+            flash(f"Successfully uploaded photo and verified {len(verified_list)} student(s)!", "success")
+        else:
+            flash("Faces detected but failed profile matching validation confidence scores.", "warning")
+            
+        return redirect(url_for('marked_attendance_photo'))
+# ==================== CLASSROOM PHOTO UPLOAD PROCESSING ====================
+
+@app.route('/upload_attendance_photo', methods=['POST'])
+@login_required
+@teacher_required
+def upload_attendance_photo():
+    """Handles an uploaded classroom image frame and processes it via face biometrics."""
+    subject_id = request.form.get('subject_id')
+    if not subject_id:
+        flash('Please select a course subject first!', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if 'classroom_photo' not in request.files:
+        flash('No file part detected in request form payload.', 'danger')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    file = request.files['classroom_photo']
+    if file.filename == '':
+        flash('No image file selected for upload processing.', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if file:
+        # Secure the file path name
+        filename = secure_filename(file.filename)
+        # Rename securely to keep uniformity for frontend rendering preview window
+        latest_path = os.path.join(app.config['UPLOAD_FOLDER'], 'latest_capture.jpg')
+        file.save(latest_path)
+        
+        # Read file image stream via OpenCV array decoding
+        frame = cv2.imread(latest_path)
+        if frame is None:
+            flash('Failed to read or parse uploaded image structure.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Prepare Image Processing
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        faces = face_cascade.detectMultiScale(gray, 1.1, 6, minSize=(30, 30))
+        
+        if len(faces) == 0:
+            flash('No human faces identified within the uploaded picture profile.', 'danger')
+            session['scanned_students'] = []
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Initialize LBPH Face Recognizer engine
+        recognizer = cv2.face.LBPHFaceRecognizer_create()
+        trainer_path = os.path.join(app.config['DATASET_FOLDER'], 'trainer.yml')
+        
+        if not os.path.exists(trainer_path):
+            flash('Biometric model data missing. Please compile training sets first.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        recognizer.read(trainer_path)
+        verified_list = []
+        
+        for (x, y, w, h) in faces:
+            student_id, loss_distance = recognizer.predict(gray[y:y+h, x:x+w])
+            
+            # Match boundary validation check score
+            if loss_distance < 65:  
+                student = User.query.filter_by(id=student_id, role='student').first()
+                if student:
+                    existing_log = Attendance.query.filter_by(
+                        subject_id=subject_id, 
+                        student_id=student.id, 
+                        date=date.today()
+                    ).first()
+                    
+                    if not existing_log:
+                        attendance_log = Attendance(
+                            subject_id=subject_id,
+                            student_id=student.id,
+                            date=date.today(),
+                            status='Present'
+                        )
+                        db.session.add(attendance_log)
+                        verified_list.append({
+                            'name': student.name,
+                            'roll_number': student.roll_number
+                        })
+                        
+        db.session.commit()
+        session['scanned_students'] = verified_list
+        
+        if verified_list:
+            flash(f"Successfully uploaded photo and verified {len(verified_list)} student(s)!", "success")
+        else:
+            flash("Faces detected but failed profile matching validation confidence scores.", "warning")
+            
+        return redirect(url_for('marked_attendance_photo'))
+# ==================== CLASSROOM PHOTO UPLOAD PROCESSING ====================
+
+@app.route('/upload_attendance_photo', methods=['POST'])
+@login_required
+@teacher_required
+def upload_attendance_photo():
+    """Handles an uploaded classroom image frame and processes it via face biometrics."""
+    subject_id = request.form.get('subject_id')
+    if not subject_id:
+        flash('Please select a course subject first!', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if 'classroom_photo' not in request.files:
+        flash('No file part detected in request form payload.', 'danger')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    file = request.files['classroom_photo']
+    if file.filename == '':
+        flash('No image file selected for upload processing.', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if file:
+        # Secure the file path name
+        filename = secure_filename(file.filename)
+        # Rename securely to keep uniformity for frontend rendering preview window
+        latest_path = os.path.join(app.config['UPLOAD_FOLDER'], 'latest_capture.jpg')
+        file.save(latest_path)
+        
+        # Read file image stream via OpenCV array decoding
+        frame = cv2.imread(latest_path)
+        if frame is None:
+            flash('Failed to read or parse uploaded image structure.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Prepare Image Processing
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        faces = face_cascade.detectMultiScale(gray, 1.1, 6, minSize=(30, 30))
+        
+        if len(faces) == 0:
+            flash('No human faces identified within the uploaded picture profile.', 'danger')
+            session['scanned_students'] = []
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Initialize LBPH Face Recognizer engine
+        recognizer = cv2.face.LBPHFaceRecognizer_create()
+        trainer_path = os.path.join(app.config['DATASET_FOLDER'], 'trainer.yml')
+        
+        if not os.path.exists(trainer_path):
+            flash('Biometric model data missing. Please compile training sets first.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        recognizer.read(trainer_path)
+        verified_list = []
+        
+        for (x, y, w, h) in faces:
+            student_id, loss_distance = recognizer.predict(gray[y:y+h, x:x+w])
+            
+            # Match boundary validation check score
+            if loss_distance < 65:  
+                student = User.query.filter_by(id=student_id, role='student').first()
+                if student:
+                    existing_log = Attendance.query.filter_by(
+                        subject_id=subject_id, 
+                        student_id=student.id, 
+                        date=date.today()
+                    ).first()
+                    
+                    if not existing_log:
+                        attendance_log = Attendance(
+                            subject_id=subject_id,
+                            student_id=student.id,
+                            date=date.today(),
+                            status='Present'
+                        )
+                        db.session.add(attendance_log)
+                        verified_list.append({
+                            'name': student.name,
+                            'roll_number': student.roll_number
+                        })
+                        
+        db.session.commit()
+        session['scanned_students'] = verified_list
+        
+        if verified_list:
+            flash(f"Successfully uploaded photo and verified {len(verified_list)} student(s)!", "success")
+        else:
+            flash("Faces detected but failed profile matching validation confidence scores.", "warning")
+            
+        return redirect(url_for('marked_attendance_photo'))
+# ==================== CLASSROOM PHOTO UPLOAD PROCESSING ====================
+
+@app.route('/upload_attendance_photo', methods=['POST'])
+@login_required
+@teacher_required
+def upload_attendance_photo():
+    """Handles an uploaded classroom image frame and processes it via face biometrics."""
+    subject_id = request.form.get('subject_id')
+    if not subject_id:
+        flash('Please select a course subject first!', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if 'classroom_photo' not in request.files:
+        flash('No file part detected in request form payload.', 'danger')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    file = request.files['classroom_photo']
+    if file.filename == '':
+        flash('No image file selected for upload processing.', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if file:
+        # Secure the file path name
+        filename = secure_filename(file.filename)
+        # Rename securely to keep uniformity for frontend rendering preview window
+        latest_path = os.path.join(app.config['UPLOAD_FOLDER'], 'latest_capture.jpg')
+        file.save(latest_path)
+        
+        # Read file image stream via OpenCV array decoding
+        frame = cv2.imread(latest_path)
+        if frame is None:
+            flash('Failed to read or parse uploaded image structure.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Prepare Image Processing
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        faces = face_cascade.detectMultiScale(gray, 1.1, 6, minSize=(30, 30))
+        
+        if len(faces) == 0:
+            flash('No human faces identified within the uploaded picture profile.', 'danger')
+            session['scanned_students'] = []
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Initialize LBPH Face Recognizer engine
+        recognizer = cv2.face.LBPHFaceRecognizer_create()
+        trainer_path = os.path.join(app.config['DATASET_FOLDER'], 'trainer.yml')
+        
+        if not os.path.exists(trainer_path):
+            flash('Biometric model data missing. Please compile training sets first.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        recognizer.read(trainer_path)
+        verified_list = []
+        
+        for (x, y, w, h) in faces:
+            student_id, loss_distance = recognizer.predict(gray[y:y+h, x:x+w])
+            
+            # Match boundary validation check score
+            if loss_distance < 65:  
+                student = User.query.filter_by(id=student_id, role='student').first()
+                if student:
+                    existing_log = Attendance.query.filter_by(
+                        subject_id=subject_id, 
+                        student_id=student.id, 
+                        date=date.today()
+                    ).first()
+                    
+                    if not existing_log:
+                        attendance_log = Attendance(
+                            subject_id=subject_id,
+                            student_id=student.id,
+                            date=date.today(),
+                            status='Present'
+                        )
+                        db.session.add(attendance_log)
+                        verified_list.append({
+                            'name': student.name,
+                            'roll_number': student.roll_number
+                        })
+                        
+        db.session.commit()
+        session['scanned_students'] = verified_list
+        
+        if verified_list:
+            flash(f"Successfully uploaded photo and verified {len(verified_list)} student(s)!", "success")
+        else:
+            flash("Faces detected but failed profile matching validation confidence scores.", "warning")
+            
+        return redirect(url_for('marked_attendance_photo'))
+# ==================== CLASSROOM PHOTO UPLOAD PROCESSING ====================
+
+@app.route('/upload_attendance_photo', methods=['POST'])
+@login_required
+@teacher_required
+def upload_attendance_photo():
+    """Handles an uploaded classroom image frame and processes it via face biometrics."""
+    subject_id = request.form.get('subject_id')
+    if not subject_id:
+        flash('Please select a course subject first!', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if 'classroom_photo' not in request.files:
+        flash('No file part detected in request form payload.', 'danger')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    file = request.files['classroom_photo']
+    if file.filename == '':
+        flash('No image file selected for upload processing.', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if file:
+        # Secure the file path name
+        filename = secure_filename(file.filename)
+        # Rename securely to keep uniformity for frontend rendering preview window
+        latest_path = os.path.join(app.config['UPLOAD_FOLDER'], 'latest_capture.jpg')
+        file.save(latest_path)
+        
+        # Read file image stream via OpenCV array decoding
+        frame = cv2.imread(latest_path)
+        if frame is None:
+            flash('Failed to read or parse uploaded image structure.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Prepare Image Processing
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        faces = face_cascade.detectMultiScale(gray, 1.1, 6, minSize=(30, 30))
+        
+        if len(faces) == 0:
+            flash('No human faces identified within the uploaded picture profile.', 'danger')
+            session['scanned_students'] = []
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Initialize LBPH Face Recognizer engine
+        recognizer = cv2.face.LBPHFaceRecognizer_create()
+        trainer_path = os.path.join(app.config['DATASET_FOLDER'], 'trainer.yml')
+        
+        if not os.path.exists(trainer_path):
+            flash('Biometric model data missing. Please compile training sets first.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        recognizer.read(trainer_path)
+        verified_list = []
+        
+        for (x, y, w, h) in faces:
+            student_id, loss_distance = recognizer.predict(gray[y:y+h, x:x+w])
+            
+            # Match boundary validation check score
+            if loss_distance < 65:  
+                student = User.query.filter_by(id=student_id, role='student').first()
+                if student:
+                    existing_log = Attendance.query.filter_by(
+                        subject_id=subject_id, 
+                        student_id=student.id, 
+                        date=date.today()
+                    ).first()
+                    
+                    if not existing_log:
+                        attendance_log = Attendance(
+                            subject_id=subject_id,
+                            student_id=student.id,
+                            date=date.today(),
+                            status='Present'
+                        )
+                        db.session.add(attendance_log)
+                        verified_list.append({
+                            'name': student.name,
+                            'roll_number': student.roll_number
+                        })
+                        
+        db.session.commit()
+        session['scanned_students'] = verified_list
+        
+        if verified_list:
+            flash(f"Successfully uploaded photo and verified {len(verified_list)} student(s)!", "success")
+        else:
+            flash("Faces detected but failed profile matching validation confidence scores.", "warning")
+            
+        return redirect(url_for('marked_attendance_photo'))
+# ==================== CLASSROOM PHOTO UPLOAD PROCESSING ====================
+
+@app.route('/upload_attendance_photo', methods=['POST'])
+@login_required
+@teacher_required
+def upload_attendance_photo():
+    """Handles an uploaded classroom image frame and processes it via face biometrics."""
+    subject_id = request.form.get('subject_id')
+    if not subject_id:
+        flash('Please select a course subject first!', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if 'classroom_photo' not in request.files:
+        flash('No file part detected in request form payload.', 'danger')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    file = request.files['classroom_photo']
+    if file.filename == '':
+        flash('No image file selected for upload processing.', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if file:
+        # Secure the file path name
+        filename = secure_filename(file.filename)
+        # Rename securely to keep uniformity for frontend rendering preview window
+        latest_path = os.path.join(app.config['UPLOAD_FOLDER'], 'latest_capture.jpg')
+        file.save(latest_path)
+        
+        # Read file image stream via OpenCV array decoding
+        frame = cv2.imread(latest_path)
+        if frame is None:
+            flash('Failed to read or parse uploaded image structure.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Prepare Image Processing
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        faces = face_cascade.detectMultiScale(gray, 1.1, 6, minSize=(30, 30))
+        
+        if len(faces) == 0:
+            flash('No human faces identified within the uploaded picture profile.', 'danger')
+            session['scanned_students'] = []
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Initialize LBPH Face Recognizer engine
+        recognizer = cv2.face.LBPHFaceRecognizer_create()
+        trainer_path = os.path.join(app.config['DATASET_FOLDER'], 'trainer.yml')
+        
+        if not os.path.exists(trainer_path):
+            flash('Biometric model data missing. Please compile training sets first.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        recognizer.read(trainer_path)
+        verified_list = []
+        
+        for (x, y, w, h) in faces:
+            student_id, loss_distance = recognizer.predict(gray[y:y+h, x:x+w])
+            
+            # Match boundary validation check score
+            if loss_distance < 65:  
+                student = User.query.filter_by(id=student_id, role='student').first()
+                if student:
+                    existing_log = Attendance.query.filter_by(
+                        subject_id=subject_id, 
+                        student_id=student.id, 
+                        date=date.today()
+                    ).first()
+                    
+                    if not existing_log:
+                        attendance_log = Attendance(
+                            subject_id=subject_id,
+                            student_id=student.id,
+                            date=date.today(),
+                            status='Present'
+                        )
+                        db.session.add(attendance_log)
+                        verified_list.append({
+                            'name': student.name,
+                            'roll_number': student.roll_number
+                        })
+                        
+        db.session.commit()
+        session['scanned_students'] = verified_list
+        
+        if verified_list:
+            flash(f"Successfully uploaded photo and verified {len(verified_list)} student(s)!", "success")
+        else:
+            flash("Faces detected but failed profile matching validation confidence scores.", "warning")
+            
+        return redirect(url_for('marked_attendance_photo'))
+        # ==================== CLASSROOM PHOTO UPLOAD PROCESSING ====================
+
+@app.route('/upload_attendance_photo', methods=['POST'])
+@login_required
+@teacher_required
+def upload_attendance_photo():
+    """Handles an uploaded classroom image frame and processes it via face biometrics."""
+    subject_id = request.form.get('subject_id')
+    if not subject_id:
+        flash('Please select a course subject first!', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if 'classroom_photo' not in request.files:
+        flash('No file part detected in request form payload.', 'danger')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    file = request.files['classroom_photo']
+    if file.filename == '':
+        flash('No image file selected for upload processing.', 'warning')
+        return redirect(url_for('marked_attendance_photo'))
+        
+    if file:
+        # Secure the file path name
+        filename = secure_filename(file.filename)
+        # Rename securely to keep uniformity for frontend rendering preview window
+        latest_path = os.path.join(app.config['UPLOAD_FOLDER'], 'latest_capture.jpg')
+        file.save(latest_path)
+        
+        # Read file image stream via OpenCV array decoding
+        frame = cv2.imread(latest_path)
+        if frame is None:
+            flash('Failed to read or parse uploaded image structure.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Prepare Image Processing
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        faces = face_cascade.detectMultiScale(gray, 1.1, 6, minSize=(30, 30))
+        
+        if len(faces) == 0:
+            flash('No human faces identified within the uploaded picture profile.', 'danger')
+            session['scanned_students'] = []
+            return redirect(url_for('marked_attendance_photo'))
+            
+        # Initialize LBPH Face Recognizer engine
+        recognizer = cv2.face.LBPHFaceRecognizer_create()
+        trainer_path = os.path.join(app.config['DATASET_FOLDER'], 'trainer.yml')
+        
+        if not os.path.exists(trainer_path):
+            flash('Biometric model data missing. Please compile training sets first.', 'danger')
+            return redirect(url_for('marked_attendance_photo'))
+            
+        recognizer.read(trainer_path)
+        verified_list = []
+        
+        for (x, y, w, h) in faces:
+            student_id, loss_distance = recognizer.predict(gray[y:y+h, x:x+w])
+            
+            # Match boundary validation check score
+            if loss_distance < 65:  
+                student = User.query.filter_by(id=student_id, role='student').first()
+                if student:
+                    existing_log = Attendance.query.filter_by(
+                        subject_id=subject_id, 
+                        student_id=student.id, 
+                        date=date.today()
+                    ).first()
+                    
+                    if not existing_log:
+                        attendance_log = Attendance(
+                            subject_id=subject_id,
+                            student_id=student.id,
+                            date=date.today(),
+                            status='Present'
+                        )
+                        db.session.add(attendance_log)
+                        verified_list.append({
+                            'name': student.name,
+                            'roll_number': student.roll_number
+                        })
+                        
+        db.session.commit()
+        session['scanned_students'] = verified_list
+        
+        if verified_list:
+            flash(f"Successfully uploaded photo and verified {len(verified_list)} student(s)!", "success")
+        else:
+            flash("Faces detected but failed profile matching validation confidence scores.", "warning")
+            
+        return redirect(url_for('marked_attendance_photo'))
 
 if __name__ == '__main__':
     app.run(debug=True)
